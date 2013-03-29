@@ -58,6 +58,8 @@ class Arrow
 class Gate extends Node
   constructor: ->
     super
+    @mode = 'random'
+    @count = 0
 
   give: (n) ->
     for [1..n]
@@ -69,7 +71,11 @@ class Gate extends Node
     total = 0
     for a in @out_arrows
       total += a.label
-    r = Math.random() * total
+    if @mode is 'random'
+      r = Math.random() * total
+    else if @mode is 'deal'
+      r = @count
+      @count = (@count + 1) % total
     running_total = 0
     for a in @out_arrows
       running_total += a.label
@@ -104,5 +110,20 @@ tests = [
     p1.push()
     assert.equal 0, p1.tokens
     assert.equal 2, p2.tokens + p3.tokens
+  ->
+    p1 = new Pool
+    p1.tokens = 2
+    g = new Gate
+    g.mode = 'deal'
+    p1.arrow g
+    p2 = new Pool
+    p3 = new Pool
+    g.arrow p2
+    g.arrow p3
+    p1.push()
+    p1.push()
+    assert.equal 0, p1.tokens
+    assert.equal 1, p2.tokens
+    assert.equal 1, p3.tokens
 ]
 t() for t in tests
