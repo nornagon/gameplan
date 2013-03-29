@@ -78,16 +78,31 @@ class Gate extends Node
     return
 
 assert = require 'assert'
-test = ->
-  p1 = new Pool
-  p1.tokens = 1
-  p2 = new Pool
-  g = new Gate
-  a1 = p1.arrow g
-  a2 = g.arrow p2
-  assert.equal 1, p1.tokens
-  assert.equal 0, p2.tokens
-  p1.push()
-  assert.equal 0, p1.tokens
-  assert.equal 1, p2.tokens
-test()
+tests = [
+  ->
+    p1 = new Pool
+    p1.tokens = 1
+    p2 = new Pool
+    g = new Gate
+    a1 = p1.arrow g
+    a2 = g.arrow p2
+    assert.equal 1, p1.tokens
+    assert.equal 0, p2.tokens
+    p1.push()
+    assert.equal 0, p1.tokens
+    assert.equal 1, p2.tokens
+  ->
+    p1 = new Pool
+    p1.tokens = 2
+    g = new Gate
+    p1.arrow g
+    p2 = new Pool
+    p3 = new Pool
+    g.arrow p2
+    g.arrow p3
+    p1.push()
+    p1.push()
+    assert.equal 0, p1.tokens
+    assert.equal 2, p2.tokens + p3.tokens
+]
+t() for t in tests
