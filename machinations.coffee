@@ -39,7 +39,7 @@ class Pool
     n
   give: (n) ->
     @tokens += n
-    @emit 'in', n
+    @emit 'in', n if n > 0
 
   pullAll: ->
     for a in @in_arrows

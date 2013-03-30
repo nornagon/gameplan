@@ -190,8 +190,6 @@ mouse = null
 canvas.addEventListener 'mousemove', (e) ->
   mouse = v e.offsetX, e.offsetY
   if dragged
-    return if dragged instanceof Arrow
-
     delta = v.sub mouse, dragMousePos
     dragMousePos = mouse
 
@@ -206,6 +204,8 @@ canvas.addEventListener 'mousemove', (e) ->
     if hovered != newHover
       hovered = newHover
       draw()
+
+nextMouseUp = null
 
 saved_state = null
 running = false
@@ -226,12 +226,34 @@ window.addEventListener 'keydown', (e) ->
       draw()
       dragged = p
       dragMousePos = mouse
+    when "A"
+      break if running
+      nextMouseUp = ->
+        o = objectAt mouse
+        a = diagram.add new Arrow o, {p:v(mouse.x,mouse.y), in_arrows:[]}
+        a.addView()
+        dragged = a
+        dragMousePos = mouse
+        a.moveBy = (delta) ->
+          a.shape.b.x += delta.x
+          a.shape.b.y += delta.y
+          a.shape.recalcNormal()
+          a.shape.cachePos()
+        nextMouseUp = try_end = ->
+          if o = objectAt mouse
+            a.dst = o
+            o.in_arrows.push a
+            a.shape.b = o.p
+            a.shape.recalcNormal()
+            a.shape.cachePos()
+            draw()
+            dragged = null
+          else
+            nextMouseUp = try_end
+
 
 canvas.addEventListener 'mousedown', (e) ->
   mouse = v e.offsetX, e.offsetY
-  if dragged
-    dragged = null
-    return
   dragged = hover = objectAt mouse
   if running
     if dragged
@@ -241,5 +263,9 @@ canvas.addEventListener 'mousedown', (e) ->
   dragMousePos = mouse
 
 canvas.addEventListener 'mouseup', (e) ->
+  if f = nextMouseUp
+    nextMouseUp = null
+    f()
+    return
   dragged = null
 
