@@ -194,8 +194,9 @@ draw = ->
   n.draw() for n in nodes
 
 
-
-draw()
+setTimeout ->
+  draw()
+, 50
 
 
 objectAt = (mouse) ->
