@@ -78,6 +78,8 @@ exports.segment = (x1, y1, x2, y2, r) ->
   b: b
   r: r
   n: v.perp v.normalize v.sub b, a
+  recalcNormal: ->
+    @n = v.perp v.normalize v.sub @b, @a
   type: 'segment'
   cachePos: (tpos, trot) ->
     tpos ?= v.zero

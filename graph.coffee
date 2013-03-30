@@ -26,6 +26,15 @@ Pool::type = 'pool'
 Pool::moveBy = (delta) ->
   @p = v.add @p, delta
   @shape.cachePos @p
+
+  for arr in @out_arrows
+    arr.shape.a = @p
+    arr.shape.recalcNormal()
+    arr.shape.cachePos()
+  for arr in @in_arrows
+    arr.shape.b = @p
+    arr.shape.recalcNormal()
+    arr.shape.cachePos()
   
 
 Arrow::addView = ->
@@ -45,6 +54,7 @@ do ->
   p2.addView 400, 300
 
   a = new Arrow p1, p2
+  a.addView()
 
 
 draw = ->
