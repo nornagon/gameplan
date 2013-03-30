@@ -23,6 +23,8 @@ Pool::addView = (x, y) ->
 
 Pool::type = 'pool'
 
+Pool::z = 1
+
 Pool::moveBy = (delta) ->
   @p = v.add @p, delta
   @shape.cachePos @p
@@ -36,24 +38,40 @@ Pool::moveBy = (delta) ->
     arr.shape.recalcNormal()
     arr.shape.cachePos()
   
+Pool::draw = ->
+  ctx.fillStyle = (if this is hovered then 'blue' else 'white')
+  ctx.strokeStyle = 'black'
+  @shape.draw()
+
+  ctx.font = '20px sans-serif'
+  ctx.fillStyle = 'black'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText @tokens, @p.x, @p.y
 
 Arrow::addView = ->
-  @shape = segment @src.p.x, @src.p.y, @dst.p.x, @dst.p.y, 4
+  @shape = segment @src.p.x, @src.p.y, @dst.p.x, @dst.p.y, 2
   @shape.cachePos()
   index.insert @shape
   @shape.owner = this
 
+Arrow::draw = ->
+  ctx.strokeStyle = 'red'
+  @shape.draw()
+
+Arrow::z = 0
 
 #index.insert rect 500, 500, 100, 100
 #index.insert segment 200, 300, 500, 500, 5
 
 do ->
-  p1 = new Pool 2
+  d = new Diagram
+  p1 = d.add new Pool 2
   p1.addView 100, 100
-  p2 = new Pool 0
+  p2 = d.add new Pool 0
   p2.addView 400, 300
 
-  a = new Arrow p1, p2
+  a = d.add new Arrow p1, p2
   a.addView()
 
 
@@ -62,10 +80,12 @@ draw = ->
 
   ctx.fillStyle = 'white'
   ctx.fillRect 0, 0, canvas.width, canvas.height
-  index.each (s) ->
-    ctx.fillStyle = (if hovered is s.owner then 'black' else 'white')
-    ctx.strokeStyle = (if hovered is s.owner then 'green' else 'black')
-    s.draw()
+
+  nodes = []
+  index.each (s) -> nodes.push s.owner
+  nodes.sort (a, b) -> (+a.z) - (+b.z)
+
+  n.draw() for n in nodes
 
 
 
