@@ -19,15 +19,17 @@ circleSegmentQuery = (shape, center, r, a, b) ->
     if 0 <= t <= 1
       return {shape, t, n:v.normalize(v.lerp(a, b, t))}
 
-exports.circle = (x, y, radius) ->
-  throw new error 'need an x' unless typeof x is 'number'
-  throw new error 'need a y' unless typeof y is 'number'
-  throw new error 'need a radius' unless typeof radius is 'number'
+class exports.Circle
+  type: 'circle' # Could probably use instanceof instead of this now.
 
-  c: v(x,y) # center
-  tc: null # transformed center
-  r: radius # radius
-  type: 'circle'
+  constructor: (x, y, radius) ->
+    throw new error 'need an x' unless typeof x is 'number'
+    throw new error 'need a y' unless typeof y is 'number'
+    throw new error 'need a radius' unless typeof radius is 'number'
+
+    @c = v(x,y) # center
+    @tc = null # transformed center
+    @r = radius # radius
 
   cachePos: (tpos, trot) ->
     c = @c
@@ -68,21 +70,21 @@ exports.circle = (x, y, radius) ->
 
   toJSON: -> {@type, @c, @r}
 
+exports.circle = (x, y, r) -> new exports.Circle x, y, r
+
 bbContainsVect2 = (l, b, r, t, v) -> l <= v.x && r >= v.x && b <= v.y && t >= v.y
 
 # Line segment from a to b with width r
-exports.segment = (x1, y1, x2, y2, r) ->
-  a = v x1, y1
-  b = v x2, y2
-
-  a: a
-  b: b
-  r: r
-  n: v.perp v.normalize v.sub b, a
-  recalcNormal: ->
-    @n = v.perp v.normalize v.sub @b, @a
+class exports.Segment
   type: 'segment'
+  constructor: (x1, y1, x2, y2, @r) ->
+    @a = v x1, y1
+    @b = v x2, y2
+
+    @n = v.perp v.normalize v.sub @b, @a
+
   cachePos: (tpos, trot) ->
+    @n = v.perp v.normalize v.sub @b, @a
     tpos ?= v.zero
 
     @ta = v.add tpos, (if trot then v.rotate @a, trot else @a)
@@ -165,6 +167,7 @@ exports.segment = (x1, y1, x2, y2, r) ->
       else
         return info2
 
+exports.segment = (x1, y1, x2, y2, r) -> new exports.Segment x1, y1, x2, y2, r
 
 Axis = (@n, @d) ->
 
@@ -245,81 +248,81 @@ transformAxes = (poly, p, rot) ->
     dst[i].n = n
     dst[i].d = v.dot(p, n) + src[i].d
 
-exports.poly = poly = (x, y, verts) ->
-  p =
-    verts: verts
-    cachePos: (tpos, trot) ->
-      if trot?
-        trot = v.forangle trot if typeof trot is 'number'
-        p = v.rotate v(x, y), trot
-      else
-        p = v(x, y)
+class exports.Poly
+  constructor: (x, y, @verts) ->
+    @p = v x, y
 
-      p = v(tpos.x + p.x, tpos.y + p.y) if tpos?
+    setupPoly this
 
-      transformVerts this, p, trot
-      transformAxes this, p, trot
-      this
-    path: ->
-      ctx.beginPath()
+  cachePos: (tpos, trot) ->
+    if trot?
+      trot = v.forangle trot if typeof trot is 'number'
+      p = v.rotate @p, trot
+    else
+      p = @p
 
-      len = @verts.length
+    p = v(tpos.x + p.x, tpos.y + p.y) if tpos?
 
-      ctx.moveTo @tVerts[0], @tVerts[1]
-      for i in [2...len] by 2
-        ctx.lineTo @tVerts[i], @tVerts[i+1]
-      ctx.closePath()
-    draw: ->
-      #ctx.fillStyle = @owner.color or 'green'
-      @path()
-      ctx.strokeStyle = 'black'
-      ctx.lineWidth = 2
-      ctx.fill()
-      ctx.stroke()
-    type: 'poly'
-    pointQuery: (p) ->
-      return unless bbContainsVect2 @bb_l, @bb_b, @bb_r, @bb_t, p
+    transformVerts this, p, trot
+    transformAxes this, p, trot
+    this
+  path: ->
+    ctx.beginPath()
+
+    len = @verts.length
+
+    ctx.moveTo @tVerts[0], @tVerts[1]
+    for i in [2...len] by 2
+      ctx.lineTo @tVerts[i], @tVerts[i+1]
+    ctx.closePath()
+  draw: ->
+    @path()
+    ctx.strokeStyle = 'black'
+    ctx.lineWidth = 2
+    ctx.fill()
+    ctx.stroke()
+  type: 'poly'
+  pointQuery: (p) ->
+    return unless bbContainsVect2 @bb_l, @bb_b, @bb_r, @bb_t, p
+    
+    info = {shape:this}
+    
+    axes = @tAxes
+    for i in [0...axes.length]
+      n = axes[i].n
+      dist = axes[i].d - v.dot(n, p)
       
-      info = {shape:this}
+      if dist < 0
+        return
+      else if dist < info.d
+        info.d = dist
+        info.n = n
+    
+    return info
+
+  segmentQuery: (a, b) ->
+    axes = @tAxes
+    verts = @tVerts
+    len = axes.length * 2
+    
+    for i in [0...axes.length]
+      n = axes[i].n
+      an = v.dot a, n
+      continue if axes[i].d > an
       
-      axes = @tAxes
-      for i in [0...axes.length]
-        n = axes[i].n
-        dist = axes[i].d - v.dot(n, p)
-        
-        if dist < 0
-          return
-        else if dist < info.d
-          info.d = dist
-          info.n = n
+      bn = v.dot b, n
+      t = (axes[i].d - an)/(bn - an)
+      continue if t < 0 or 1 < t
       
-      return info
+      point = v.lerp a, b, t
+      dt = -v.cross n, point
+      dtMin = -v.cross2 n.x, n.y, verts[i*2], verts[i*2+1]
+      dtMax = -v.cross2 n.x, n.y, verts[(i*2+2)%len], verts[(i*2+3)%len]
 
-    segmentQuery: (a, b) ->
-      axes = @tAxes
-      verts = @tVerts
-      len = axes.length * 2
-      
-      for i in [0...axes.length]
-        n = axes[i].n
-        an = v.dot a, n
-        continue if axes[i].d > an
-        
-        bn = v.dot b, n
-        t = (axes[i].d - an)/(bn - an)
-        continue if t < 0 or 1 < t
-        
-        point = v.lerp a, b, t
-        dt = -v.cross n, point
-        dtMin = -v.cross2 n.x, n.y, verts[i*2], verts[i*2+1]
-        dtMax = -v.cross2 n.x, n.y, verts[(i*2+2)%len], verts[(i*2+3)%len]
+      if dtMin <= dt && dt <= dtMax
+        return {shape:this, t, n}
 
-        if dtMin <= dt && dt <= dtMax
-          return {shape:this, t, n}
-
-  setupPoly p
-
-  p
+exports.poly = poly = (x, y, verts) -> new exports.Poly x, y, verts
 
 exports.rect = (x, y, w, h) -> poly x, y, [0, 0,  0, h,  w, h,  w, 0]
 
