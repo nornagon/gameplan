@@ -86,6 +86,7 @@ do ->
   p1.addView 100, 100
   p2 = d.add new Pool 0
   p2.addView 400, 300
+  p2.mode = 'push'
 
   g = d.add new Gate
   g.addView 300, 300
@@ -94,13 +95,29 @@ do ->
   a.addView()
   a = d.add new Arrow g, p2
   a.addView()
+  a = d.add new Arrow p2, p1
+  a.addView()
 
+
+drawGrid = ->
+  gridSize = 40
+  for y in [1...(canvas.height/gridSize)|0]
+    ctx.moveTo 0, y*gridSize+0.5
+    ctx.lineTo canvas.width-1, y*gridSize+0.5
+  for x in [1...(canvas.width/gridSize)|0]
+    ctx.moveTo x*gridSize+0.5, 0
+    ctx.lineTo x*gridSize+0.5, canvas.height-1
+  ctx.strokeStyle = 'hsl(205,77%,76%)'
+  ctx.lineWidth = 0.5
+  ctx.stroke()
+  ctx.lineWidth = 1
 
 draw = ->
   index.reindex()
 
   ctx.fillStyle = 'white'
   ctx.fillRect 0, 0, canvas.width, canvas.height
+  drawGrid()
 
   nodes = []
   index.each (s) -> nodes.push s.owner
