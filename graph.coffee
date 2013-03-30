@@ -1,6 +1,6 @@
 canvas = document.getElementsByTagName('canvas')[0]
-canvas.width = 800
-canvas.height = 600
+canvas.width = 801
+canvas.height = 601
 
 ctx = canvas.getContext '2d'
 
@@ -205,14 +205,22 @@ canvas.addEventListener 'mousemove', (e) ->
       hovered = newHover
       draw()
 
+running = false
+window.addEventListener 'keydown', (e) ->
+  if e.which is 32
+    e.preventDefault()
+    running = not running
 
 canvas.addEventListener 'mousedown', (e) ->
   mouse = v e.offsetX, e.offsetY
   dragged = hover = objectAt mouse
+  if running
+    if dragged
+      dragged.activate?()
+      draw()
+    dragged = null
+  else
   dragMousePos = mouse
-  if dragged
-    dragged.activate?()
-    draw()
 
 canvas.addEventListener 'mouseup', (e) ->
   dragged = null
