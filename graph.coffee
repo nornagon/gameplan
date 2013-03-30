@@ -43,7 +43,7 @@ Pool::draw = ->
   ctx.strokeStyle = 'black'
   @shape.draw()
 
-  ctx.font = '20px sans-serif'
+  ctx.font = '30px IsoEur'
   ctx.fillStyle = 'black'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
