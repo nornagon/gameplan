@@ -3,7 +3,7 @@ unless window?
 min = Math.min
 max = Math.max
 
-circleSegmentQuery = (shape, center, r, a, b, info) ->
+circleSegmentQuery = (shape, center, r, a, b) ->
   # offset the line to be relative to the circle
   a = v.sub a, center
   b = v.sub b, center
@@ -13,10 +13,10 @@ circleSegmentQuery = (shape, center, r, a, b, info) ->
   qc = v.dot(a, a) - r*r
   
   det = qb*qb - 4*qa*qc
-  
+
   if det >= 0
     t = (-qb - Math.sqrt(det))/(2*qa)
-    if 0 <= t and t <= 1
+    if 0 <= t <= 1
       return {shape, t, n:v.normalize(v.lerp(a, b, t))}
 
 exports.circle = (x, y, radius) ->

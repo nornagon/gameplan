@@ -63,7 +63,25 @@ Arrow::addView = ->
 
 Arrow::draw = ->
   ctx.strokeStyle = 'red'
-  @shape.draw()
+  a = @shape.ta
+  b = @shape.tb
+  if @src.shape
+    q = @src.shape.segmentQuery @shape.tb, @shape.ta
+    if q
+      n = v.normalize v.sub(@shape.tb, @shape.ta)
+      a = v.add v.mult(n, 6), v.lerp(@shape.tb, @shape.ta, q.t)
+  if @dst.shape
+    q = @dst.shape.segmentQuery @shape.ta, @shape.tb
+    if q
+      n = v.normalize v.sub(@shape.ta, @shape.tb)
+      b = v.add v.mult(n, 6), v.lerp(@shape.ta, @shape.tb, q.t)
+
+  ctx.lineCap = 'round'
+  ctx.lineWidth = 4
+  ctx.beginPath()
+  ctx.moveTo a.x, a.y
+  ctx.lineTo b.x, b.y
+  ctx.stroke()
 
 Arrow::z = 0
 
