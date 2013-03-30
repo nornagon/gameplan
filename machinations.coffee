@@ -21,6 +21,7 @@ class Pool extends Node
   take: (n) ->
     n = Math.min n, @tokens
     @tokens -= n
+    @emit 'out', n
     n
   give: (n) ->
     @tokens += n
@@ -73,7 +74,17 @@ class Trigger
     @src.on 'in', @listener = =>
       @dst.activate()
   remove: ->
-    @src.removeListener @listener
+    @src.removeListener 'in', @listener
+
+class Modifier
+  constructor: (@src, @dst, @modifier) ->
+    @src.on 'in', @in_listener = =>
+      @dst.label += @modifier
+    @src.on 'out', @out_listener = =>
+      @dst.label -= @modifier
+  remove: ->
+    @src.removeListener 'in', @in_listener
+    @src.removeListener 'out', @out_listener
 
 class Gate extends Node
   constructor: ->
@@ -148,5 +159,15 @@ tests = [
     t = new Trigger p, {activate:->activated++}
     p.give 1
     assert.equal activated, 1, 'activated'
+  ->
+    p1 = new Pool 1
+    p2 = new Pool
+    a = p1.arrow p2
+    p2.arrow p1
+    m = new Modifier p2, a, 1
+    p1.push()
+    assert.equal a.label, 2
+    p2.push()
+    assert.equal a.label, 1
 ]
 t() for t in tests
