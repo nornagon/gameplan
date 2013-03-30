@@ -39,7 +39,13 @@ Pool::moveBy = Gate::moveBy = (delta) ->
     arr.shape.cachePos()
   
 Pool::draw = ->
-  ctx.fillStyle = (if this is hovered then 'blue' else 'white')
+  if this is hovered
+    @shape.path()
+    ctx.strokeStyle = 'orange'
+    ctx.lineWidth = 8
+    ctx.lineJoin = 'round'
+    ctx.stroke()
+  ctx.fillStyle = 'white'
   ctx.strokeStyle = 'black'
   @shape.draw()
 
@@ -71,7 +77,13 @@ Gate::addView = (x, y) ->
   ]
 
 Gate::draw = ->
-  ctx.fillStyle = if this is hovered then 'blue' else 'white'
+  if this is hovered
+    @shape.path()
+    ctx.strokeStyle = 'orange'
+    ctx.lineWidth = 8
+    ctx.lineJoin = 'round'
+    ctx.stroke()
+  ctx.fillStyle = 'white'
   @shape.draw()
 
 Gate::z = 1

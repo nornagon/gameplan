@@ -41,13 +41,14 @@ exports.circle = (x, y, radius) ->
     @bb_t = @tc.y + @r
     this
 
+  path: ->
+    ctx.beginPath()
+    ctx.arc @tc.x, @tc.y, @r, 0, 2*Math.PI, false
   draw: ->
     #ctx.fillStyle = @owner?.color or 'green'
     #ctx.strokeStyle = 'black'
+    @path()
     ctx.lineWidth = 2
-
-    ctx.beginPath()
-    ctx.arc @tc.x, @tc.y, @r, 0, 2*Math.PI, false
     ctx.fill()
     ctx.stroke()
 
@@ -259,18 +260,20 @@ exports.poly = poly = (x, y, verts) ->
       transformVerts this, p, trot
       transformAxes this, p, trot
       this
-    draw: ->
-      #ctx.fillStyle = @owner.color or 'green'
-      ctx.strokeStyle = 'black'
-      ctx.lineWidth = 2
-
+    path: ->
       ctx.beginPath()
 
       len = @verts.length
 
-      ctx.moveTo @tVerts[len - 2], @tVerts[len - 1]
-      for i in [0...len] by 2
+      ctx.moveTo @tVerts[0], @tVerts[1]
+      for i in [2...len] by 2
         ctx.lineTo @tVerts[i], @tVerts[i+1]
+      ctx.closePath()
+    draw: ->
+      #ctx.fillStyle = @owner.color or 'green'
+      @path()
+      ctx.strokeStyle = 'black'
+      ctx.lineWidth = 2
       ctx.fill()
       ctx.stroke()
     type: 'poly'
