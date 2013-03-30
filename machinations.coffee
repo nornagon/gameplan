@@ -5,8 +5,29 @@ Array::setRemove = (obj) ->
     @length--
   i
 
+class Diagram
+  constructor: ->
+    @stuff = []
+  add: (thing) ->
+    @stuff.push thing; thing
+  remove: (thing) ->
+    @stuff.setRemove thing
+    thing.remove?()
+
+  state: ->
+    state = []
+    for t in @stuff
+      if (s = t.state?())?
+        state.push [t, s]
+    state
+  restore: (state) ->
+    t.reset?() for t in @stuff
+    for [t,s] in state
+      t.restore s
+    return
+
 class Pool
-  constructor: (@tokens = 0)->
+  constructor: (@tokens = 0) ->
     @out_arrows = []
     @in_arrows = []
     @mode = 'pull-all'
@@ -38,13 +59,15 @@ class Pool
       when 'pull-all' then @pullAll()
       when 'push' then @push()
 
-
   on: (ev, listener) ->
     ((@listeners ?= {})[ev] ?= []).push listener
   removeListener: (ev, listener) ->
     ((@listeners ?= {})[ev] ?= []).setRemove listener
   emit: (ev, args...) ->
     l.apply undefined, args for l in ((@listeners ?= {})[ev] ?= [])
+
+  state: -> @tokens
+  restore: (s) -> @tokens = s
 
 class Arrow
   constructor: (@src, @dst) ->
@@ -61,6 +84,9 @@ class Arrow
     return 0
   push: (n) ->
     @dst.give n
+
+  state: -> @label
+  restore: (s) -> @label = s
 
 class Trigger
   constructor: (@src, @dst) ->
@@ -108,60 +134,75 @@ class Gate
         return a
     return
 
-#assert = require 'assert'
-tests = [
-  ->
-    p1 = new Pool 1
-    p2 = new Pool
-    g = new Gate
-    a1 = p1.arrow g
-    a2 = g.arrow p2
-    assert.equal 1, p1.tokens
-    assert.equal 0, p2.tokens
-    p1.push()
-    assert.equal 0, p1.tokens
-    assert.equal 1, p2.tokens
-  ->
-    p1 = new Pool 2
-    g = new Gate
-    p1.arrow g
-    p2 = new Pool
-    p3 = new Pool
-    g.arrow p2
-    g.arrow p3
-    p1.push()
-    p1.push()
-    assert.equal 0, p1.tokens
-    assert.equal 2, p2.tokens + p3.tokens
-  ->
-    p1 = new Pool 2
-    g = new Gate
-    g.mode = 'deal'
-    p1.arrow g
-    p2 = new Pool
-    p3 = new Pool
-    g.arrow p2
-    g.arrow p3
-    p1.push()
-    p1.push()
-    assert.equal 0, p1.tokens
-    assert.equal 1, p2.tokens
-    assert.equal 1, p3.tokens
-  ->
-    p = new Pool
-    activated = 0
-    t = new Trigger p, {activate:->activated++}
-    p.give 1
-    assert.equal activated, 1, 'activated'
-  ->
-    p1 = new Pool 1
-    p2 = new Pool
-    a = p1.arrow p2
-    p2.arrow p1
-    m = new Modifier p2, a, 1
-    p1.push()
-    assert.equal a.label, 2
-    p2.push()
-    assert.equal a.label, 1
-]
-#t() for t in tests
+  reset: -> @count = 0
+
+if typeof window is 'undefined'
+  assert = require 'assert'
+  tests = [
+    ->
+      p1 = new Pool 1
+      p2 = new Pool
+      g = new Gate
+      a1 = new Arrow p1, g
+      a2 = new Arrow g, p2
+      assert.equal 1, p1.tokens
+      assert.equal 0, p2.tokens
+      p1.push()
+      assert.equal 0, p1.tokens
+      assert.equal 1, p2.tokens
+    ->
+      p1 = new Pool 2
+      g = new Gate
+      new Arrow p1, g
+      p2 = new Pool
+      p3 = new Pool
+      new Arrow g, p2
+      new Arrow g, p3
+      p1.push()
+      p1.push()
+      assert.equal 0, p1.tokens
+      assert.equal 2, p2.tokens + p3.tokens
+    ->
+      p1 = new Pool 2
+      g = new Gate
+      g.mode = 'deal'
+      new Arrow p1, g
+      p2 = new Pool
+      p3 = new Pool
+      new Arrow g, p2
+      new Arrow g, p3
+      p1.push()
+      p1.push()
+      assert.equal 0, p1.tokens
+      assert.equal 1, p2.tokens
+      assert.equal 1, p3.tokens
+    ->
+      p = new Pool
+      activated = 0
+      t = new Trigger p, {activate:->activated++}
+      p.give 1
+      assert.equal activated, 1, 'activated'
+    ->
+      p1 = new Pool 1
+      p2 = new Pool
+      a = new Arrow p1, p2
+      new Arrow p2, p1
+      m = new Modifier p2, a, 1
+      p1.push()
+      assert.equal a.label, 2
+      p2.push()
+      assert.equal a.label, 1
+    ->
+      d = new Diagram
+      p1 = d.add new Pool 1
+      p2 = d.add new Pool
+      d.add new Arrow p1, p2
+      s = d.state()
+      p1.push()
+      assert.equal 0, p1.tokens
+      assert.equal 1, p2.tokens
+      d.restore s
+      assert.equal 1, p1.tokens
+      assert.equal 0, p2.tokens
+  ]
+  t() for t in tests
