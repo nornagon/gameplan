@@ -37,7 +37,7 @@ Pool::moveBy = Gate::moveBy = (delta) ->
     arr.shape.b = @p
     arr.shape.recalcNormal()
     arr.shape.cachePos()
-  
+
 Pool::draw = ->
   if this is hovered
     @shape.path()
@@ -186,6 +186,7 @@ objectAt = (mouse) ->
 
 dragMousePos = null
 
+mouse = null
 canvas.addEventListener 'mousemove', (e) ->
   mouse = v e.offsetX, e.offsetY
   if dragged
@@ -209,24 +210,34 @@ canvas.addEventListener 'mousemove', (e) ->
 saved_state = null
 running = false
 window.addEventListener 'keydown', (e) ->
-  if e.which is 32
-    e.preventDefault()
-    if running
-      diagram.restore saved_state
-    else
-      saved_state = diagram.state()
-    draw()
-    running = not running
+  switch String.fromCharCode e.which
+    when " "
+      e.preventDefault()
+      if running
+        diagram.restore saved_state
+      else
+        saved_state = diagram.state()
+      draw()
+      running = not running
+    when "P"
+      break if running
+      p = diagram.add new Pool
+      p.addView mouse.x, mouse.y
+      draw()
+      dragged = p
+      dragMousePos = mouse
 
 canvas.addEventListener 'mousedown', (e) ->
   mouse = v e.offsetX, e.offsetY
+  if dragged
+    dragged = null
+    return
   dragged = hover = objectAt mouse
   if running
     if dragged
       dragged.activate?()
       draw()
     dragged = null
-  else
   dragMousePos = mouse
 
 canvas.addEventListener 'mouseup', (e) ->
