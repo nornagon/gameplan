@@ -29,8 +29,8 @@ Pool::moveBy = Gate::moveBy = (delta) ->
   @p = v.add @p, delta
   @shape.cachePos @p
 
-  arr.updateSegment() for arr in @out_arrows
-  arr.updateSegment() for arr in @in_arrows
+  arr.updateSegments() for arr in @out_arrows
+  arr.updateSegments() for arr in @in_arrows
 
 Pool::draw = ->
   if this is hovered
@@ -50,57 +50,69 @@ Pool::draw = ->
   ctx.fillText @tokens, @p.x, @p.y
 
 Arrow::addView = ->
+  # The control points list is a->b->c etc and shapes is the
+  # segments a->b, b->c. The shapes list will have 1 less element
+  # than control points.
   @controlPoints = [@src, @dst]
-  @shape = segment 0,0, 0,0, 4
-  @updateSegment()
-  @shape.cachePos()
-  index.insert @shape
-  @shape.owner = this
+  shape = segment 0,0, 0,0, 4
+  @shapes = [shape]
+  index.insert shape
+  shape.owner = this
+  
+  @updateSegments()
 
-Arrow::updateSegment = ->
-  sp = @src.p # source position
-  dp = @dst.p # dest position
+Arrow::updateSegments = ->
+  # Could optimise this to only update the needed segment, but I don't
+  # expect there to be many segments.
+  for shape,i in @shapes
+    from = @controlPoints[i]
+    to = @controlPoints[i + 1]
 
-  if @src.shape
-    q = @src.shape.segmentQuery dp, sp
-    if q
+    sp = from.p # source position
+    dp = to.p # dest position
+
+    shape.a = if from.shape and (q = from.shape.segmentQuery dp, sp)
       dir = v.normalize v.sub(dp, sp)
-      @shape.a = v.add v.mult(dir, 6), v.lerp(dp, sp, q.t)
-  if @dst.shape
-    q = @dst.shape.segmentQuery sp, dp
-    if q
-      dir = v.normalize v.sub sp, dp
-      @shape.b = v.add v.mult(dir, 6), v.lerp(sp, dp, q.t)
+      v.add v.mult(dir, 6), v.lerp(dp, sp, q.t)
+    else
+      sp
 
-  @shape.cachePos()
+    shape.b = if to.shape and (q = to.shape.segmentQuery sp, dp)
+      dir = v.normalize v.sub sp, dp
+      v.add v.mult(dir, 6), v.lerp(sp, dp, q.t)
+    else
+      dp
+
+    shape.cachePos()
 
 
 Arrow::draw = ->
-  a = @shape.ta
-  b = @shape.tb
+  for shape in @shapes
+    a = shape.ta
+    b = shape.tb
 
-  stroke = ->
-    ctx.beginPath()
-    ctx.moveTo a.x, a.y
-    ctx.lineTo b.x, b.y
-    n = v.normalize v.sub a, b
-    left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/6), 10
-    right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/6), 10
-    ctx.moveTo left.x, left.y
-    ctx.lineTo b.x, b.y
-    ctx.lineTo right.x, right.y
-    ctx.stroke()
+    stroke = ->
+      ctx.beginPath()
+      ctx.moveTo a.x, a.y
+      ctx.lineTo b.x, b.y
+      n = v.normalize v.sub a, b
+      left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/6), 10
+      right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/6), 10
+      ctx.moveTo left.x, left.y
+      ctx.lineTo b.x, b.y
+      ctx.lineTo right.x, right.y
+      ctx.stroke()
 
-  ctx.lineCap = 'round'
-  
-  if this is hovered
-    ctx.strokeStyle = 'orange'
-    ctx.lineWidth = 5
+    ctx.lineCap = 'round'
+    
+    if this is hovered
+      ctx.strokeStyle = 'orange'
+      ctx.lineWidth = 5
+      stroke()
+
+    ctx.strokeStyle = 'black'
+    ctx.lineWidth = 2
     stroke()
-
-  ctx.strokeStyle = 'black'
-  ctx.lineWidth = 2
-  stroke()
 
 Arrow::z = 0
 
