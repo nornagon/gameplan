@@ -29,14 +29,8 @@ Pool::moveBy = Gate::moveBy = (delta) ->
   @p = v.add @p, delta
   @shape.cachePos @p
 
-  for arr in @out_arrows
-    arr.shape.a = @p
-    arr.shape.recalcNormal()
-    arr.shape.cachePos()
-  for arr in @in_arrows
-    arr.shape.b = @p
-    arr.shape.recalcNormal()
-    arr.shape.cachePos()
+  arr.updateSegment() for arr in @out_arrows
+  arr.updateSegment() for arr in @in_arrows
 
 Pool::draw = ->
   if this is hovered
@@ -56,25 +50,34 @@ Pool::draw = ->
   ctx.fillText @tokens, @p.x, @p.y
 
 Arrow::addView = ->
-  @shape = segment @src.p.x, @src.p.y, @dst.p.x, @dst.p.y, 2
+  @shape = segment 0,0, 0,0, 2
+  @updateSegment()
   @shape.cachePos()
   index.insert @shape
   @shape.owner = this
+
+Arrow::updateSegment = ->
+  sp = @src.p # source position
+  dp = @dst.p # dest position
+
+  if @src.shape
+    q = @src.shape.segmentQuery dp, sp
+    if q
+      dir = v.normalize v.sub(dp, sp)
+      @shape.a = v.add v.mult(dir, 6), v.lerp(dp, sp, q.t)
+  if @dst.shape
+    q = @dst.shape.segmentQuery sp, dp
+    if q
+      dir = v.normalize v.sub sp, dp
+      @shape.b = v.add v.mult(dir, 6), v.lerp(sp, dp, q.t)
+
+  @shape.cachePos()
+
 
 Arrow::draw = ->
   ctx.strokeStyle = 'red'
   a = @shape.ta
   b = @shape.tb
-  if @src.shape
-    q = @src.shape.segmentQuery @shape.tb, @shape.ta
-    if q
-      n = v.normalize v.sub(@shape.tb, @shape.ta)
-      a = v.add v.mult(n, 6), v.lerp(@shape.tb, @shape.ta, q.t)
-  if @dst.shape
-    q = @dst.shape.segmentQuery @shape.ta, @shape.tb
-    if q
-      n = v.normalize v.sub(@shape.ta, @shape.tb)
-      b = v.add v.mult(n, 6), v.lerp(@shape.ta, @shape.tb, q.t)
 
   ctx.lineCap = 'round'
   ctx.lineWidth = 2
