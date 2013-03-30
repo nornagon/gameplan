@@ -4,8 +4,7 @@ canvas.height = 601
 
 ctx = canvas.getContext '2d'
 
-# Object the mouse is currently dragging
-dragged = null
+selected = null
 # Object the mouse is hovering on
 hovered = null
 index = new BBTree()
@@ -33,9 +32,9 @@ Pool::moveBy = Gate::moveBy = (delta) ->
   arr.updateSegments() for arr in @in_arrows
 
 Pool::draw = ->
-  if this is hovered
+  if this is hovered or this is selected
     @shape.path()
-    ctx.strokeStyle = 'orange'
+    ctx.strokeStyle = if this is selected then 'hsl(192,77%,48%)' else 'orange'
     ctx.lineWidth = 8
     ctx.lineJoin = 'round'
     ctx.stroke()
@@ -124,9 +123,9 @@ Gate::addView = (x, y) ->
   ]
 
 Gate::draw = ->
-  if this is hovered
+  if this is hovered or this is selected
     @shape.path()
-    ctx.strokeStyle = 'orange'
+    ctx.strokeStyle = if this is selected then 'hsl(192,77%,48%)' else 'orange'
     ctx.lineWidth = 8
     ctx.lineJoin = 'round'
     ctx.stroke()
@@ -198,6 +197,9 @@ setTimeout ->
   draw()
 , 50
 
+select = (o) ->
+  selected = o
+  draw()
 
 objectAt = (mouse) ->
 
@@ -207,6 +209,148 @@ objectAt = (mouse) ->
       result = s.owner
 
   result
+
+
+running = false
+saved_state = null
+mouse = v 0,0
+
+ui =
+  states: []
+  state: null
+  push: (state, args...) ->
+    @states.push @state # save the old state
+    @state = state
+    @state.enter? args...
+  pop: ->
+    @state = @states.pop()
+
+ui.default =
+  mousemove: (e) ->
+    o = objectAt mouse
+    if hovered isnt o
+      hovered = o
+      draw()
+  mousedown: (e) ->
+    o = objectAt mouse
+    if o and o not instanceof Arrow
+      ui.push ui.dragging, o
+    else
+      select null
+  keydown: (e) ->
+    if e.which is 32
+      e.preventDefault()
+      saved_state = diagram.state()
+      draw()
+      running = true
+      hovered = null
+      ui.push ui.running
+
+ui.dragging =
+  enter: (obj) ->
+    @object = obj
+    @dragPos = mouse
+  mousemove: (e) ->
+    delta = v.sub mouse, @dragPos
+    @dragPos = mouse
+    @object.moveBy delta
+    draw()
+  mouseup: (e) ->
+    select @object
+    ui.pop()
+
+ui.running =
+  mousedown: (e) ->
+    o = objectAt mouse
+    if o and o not instanceof Arrow
+      o.activate()
+      draw()
+  keydown: (e) ->
+    if e.which is 32
+      e.preventDefault()
+      running = false
+      diagram.restore saved_state
+      ui.pop()
+      draw()
+
+ui.push ui.default
+
+canvas.addEventListener 'mousedown', (e) ->
+  ui.state.mousedown? e
+  return false
+canvas.addEventListener 'mouseup', (e) ->
+  ui.state.mouseup? e
+  return false
+canvas.addEventListener 'mousemove', (e) ->
+  mouse = v e.offsetX, e.offsetY
+  ui.state.mousemove? e
+  return false
+window.addEventListener 'keydown', (e) ->
+  ui.state.keydown? e
+  return false
+window.addEventListener 'keyup', (e) ->
+  ui.state.keyup? e
+  return false
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###
 
 dragMousePos = null
 
@@ -232,7 +376,6 @@ canvas.addEventListener 'mousemove', (e) ->
 nextMouseUp = null
 
 saved_state = null
-running = false
 window.addEventListener 'keydown', (e) ->
   switch String.fromCharCode e.which
     when " "
@@ -275,7 +418,6 @@ window.addEventListener 'keydown', (e) ->
           else
             nextMouseUp = try_end
 
-
 canvas.addEventListener 'mousedown', (e) ->
   mouse = v e.offsetX, e.offsetY
   dragged = hover = objectAt mouse
@@ -294,3 +436,4 @@ canvas.addEventListener 'mouseup', (e) ->
     return
   dragged = null
 
+###
