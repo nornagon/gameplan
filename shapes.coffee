@@ -254,7 +254,7 @@ exports.poly = poly = (x, y, verts) ->
       else
         p = v(x, y)
 
-      p = v(tpos.x + offs.x, tpos.y + offs.y) if tpos?
+      p = v(tpos.x + p.x, tpos.y + p.y) if tpos?
 
       transformVerts this, p, trot
       transformAxes this, p, trot

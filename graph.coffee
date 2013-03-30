@@ -25,7 +25,7 @@ Pool::type = 'pool'
 
 Pool::z = 1
 
-Pool::moveBy = (delta) ->
+Pool::moveBy = Gate::moveBy = (delta) ->
   @p = v.add @p, delta
   @shape.cachePos @p
 
@@ -61,6 +61,20 @@ Arrow::draw = ->
 
 Arrow::z = 0
 
+Gate::addView = (x, y) ->
+  @p = v x, y
+  setShape this, poly 0, 0, [
+    -10, 0
+    0, 10
+    10, 0
+    0, -10
+  ]
+
+Gate::draw = ->
+  @shape.draw()
+
+Gate::z = 1
+
 #index.insert rect 500, 500, 100, 100
 #index.insert segment 200, 300, 500, 500, 5
 
@@ -71,7 +85,12 @@ do ->
   p2 = d.add new Pool 0
   p2.addView 400, 300
 
-  a = d.add new Arrow p1, p2
+  g = d.add new Gate
+  g.addView 300, 300
+
+  a = d.add new Arrow p1, g
+  a.addView()
+  a = d.add new Arrow g, p2
   a.addView()
 
 
@@ -83,7 +102,7 @@ draw = ->
 
   nodes = []
   index.each (s) -> nodes.push s.owner
-  nodes.sort (a, b) -> (+a.z) - (+b.z)
+  nodes.sort (a, b) -> (a.z ? 0) - (b.z ? 0)
 
   n.draw() for n in nodes
 
@@ -96,7 +115,7 @@ objectAt = (mouse) ->
 
   result = null
   index.pointQuery mouse, (s) ->
-    if s.pointQuery mouse
+    if s.pointQuery(mouse) and s.owner not instanceof Arrow
       result = s.owner
 
   result
@@ -106,7 +125,7 @@ dragMousePos = null
 canvas.addEventListener 'mousemove', (e) ->
   mouse = v e.offsetX, e.offsetY
   if dragged
-    return unless dragged.type is 'pool' # for now...
+    return if dragged instanceof Arrow
 
     delta = v.sub mouse, dragMousePos
     dragMousePos = mouse
@@ -128,6 +147,9 @@ canvas.addEventListener 'mousedown', (e) ->
   mouse = v e.offsetX, e.offsetY
   dragged = hover = objectAt mouse
   dragMousePos = mouse
+  if dragged
+    dragged.activate?()
+    draw()
 
 canvas.addEventListener 'mouseup', (e) ->
   dragged = null
