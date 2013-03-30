@@ -5,10 +5,6 @@ Array::setRemove = (obj) ->
     @length--
   i
 
-class Machine
-  constructor: ->
-  tick: ->
-
 class Node
   constructor: ->
     @out_arrows = []
@@ -18,13 +14,17 @@ class Node
     new Arrow @, to
 
 class Pool extends Node
-  constructor: ->
+  constructor: (@tokens = 0)->
     super
     @mode = 'pull-all'
-    @tokens = 0
 
-  take: (n) -> @tokens -= n; n
-  give: (n) -> @tokens += n
+  take: (n) ->
+    n = Math.min n, @tokens
+    @tokens -= n
+    n
+  give: (n) ->
+    @tokens += n
+    @emit 'in', n
 
   pullAll: ->
     for a in @in_arrows
@@ -38,6 +38,19 @@ class Pool extends Node
     for a in @out_arrows
       a.push @take a.label
     return
+
+  activate: ->
+    switch @mode
+      when 'pull-all' then @pullAll()
+      when 'push' then @push()
+
+
+  on: (ev, listener) ->
+    ((@listeners ?= {})[ev] ?= []).push listener
+  removeListener: (ev, listener) ->
+    ((@listeners ?= {})[ev] ?= []).setRemove listener
+  emit: (ev, args...) ->
+    l.apply undefined, args for l in ((@listeners ?= {})[ev] ?= [])
 
 class Arrow
   constructor: (@src, @dst) ->
@@ -54,6 +67,13 @@ class Arrow
     return 0
   push: (n) ->
     @dst.give n
+
+class Trigger
+  constructor: (@src, @dst) ->
+    @src.on 'in', @listener = =>
+      @dst.activate()
+  remove: ->
+    @src.removeListener @listener
 
 class Gate extends Node
   constructor: ->
@@ -86,8 +106,7 @@ class Gate extends Node
 assert = require 'assert'
 tests = [
   ->
-    p1 = new Pool
-    p1.tokens = 1
+    p1 = new Pool 1
     p2 = new Pool
     g = new Gate
     a1 = p1.arrow g
@@ -98,8 +117,7 @@ tests = [
     assert.equal 0, p1.tokens
     assert.equal 1, p2.tokens
   ->
-    p1 = new Pool
-    p1.tokens = 2
+    p1 = new Pool 2
     g = new Gate
     p1.arrow g
     p2 = new Pool
@@ -111,8 +129,7 @@ tests = [
     assert.equal 0, p1.tokens
     assert.equal 2, p2.tokens + p3.tokens
   ->
-    p1 = new Pool
-    p1.tokens = 2
+    p1 = new Pool 2
     g = new Gate
     g.mode = 'deal'
     p1.arrow g
@@ -125,5 +142,15 @@ tests = [
     assert.equal 0, p1.tokens
     assert.equal 1, p2.tokens
     assert.equal 1, p3.tokens
+  ->
+    p1 = new Pool 1
+    p2 = new Pool
+    activated = 0
+    t = new Trigger p2, {activate:->activated++}
+    p1.arrow p2
+    p1.push()
+    assert.equal activated, 1, 'activated'
+    assert.equal p1.tokens, 0, 'p1 tokens'
+    assert.equal p2.tokens, 1, 'p2 tokens'
 ]
 t() for t in tests
