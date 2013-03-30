@@ -30,7 +30,7 @@ class Pool
   constructor: (@tokens = 0) ->
     @out_arrows = []
     @in_arrows = []
-    @mode = 'pull-all'
+    @mode = 'pull-any'
 
   take: (n) ->
     n = Math.min n, @tokens
@@ -48,6 +48,11 @@ class Pool
     for a in @in_arrows
       num += a.pull()
     @give num
+  pullAny: ->
+    num = 0
+    for a in @in_arrows
+      num += Math.min 1, a.pullAny()
+    @give num
 
   push: ->
     for a in @out_arrows
@@ -56,6 +61,7 @@ class Pool
 
   activate: ->
     switch @mode
+      when 'pull-any' then @pullAny()
       when 'pull-all' then @pullAll()
       when 'push' then @push()
 
@@ -78,6 +84,8 @@ class Arrow
     @src.out_arrows.setRemove @
     @dst.in_arrows.setRemove @
   canPull: -> @src.tokens >= @label
+  pullAny: ->
+    @src.take @label
   pull: ->
     if @src.tokens >= @label
       return @src.take @label
