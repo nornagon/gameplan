@@ -81,6 +81,12 @@ Arrow::draw = ->
   ctx.beginPath()
   ctx.moveTo a.x, a.y
   ctx.lineTo b.x, b.y
+  n = v.normalize v.sub a, b
+  left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/4), 10
+  right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/4), 10
+  ctx.moveTo left.x, left.y
+  ctx.lineTo b.x, b.y
+  ctx.lineTo right.x, right.y
   ctx.stroke()
 
 Arrow::z = 0
