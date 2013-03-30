@@ -115,8 +115,9 @@ Gate::z = 1
 #index.insert rect 500, 500, 100, 100
 #index.insert segment 200, 300, 500, 500, 5
 
+diagram = new Diagram
 do ->
-  d = new Diagram
+  d = diagram
   p1 = d.add new Pool 2
   p1.mode = 'push'
   p1.addView 100, 100
@@ -205,10 +206,16 @@ canvas.addEventListener 'mousemove', (e) ->
       hovered = newHover
       draw()
 
+saved_state = null
 running = false
 window.addEventListener 'keydown', (e) ->
   if e.which is 32
     e.preventDefault()
+    if running
+      diagram.restore saved_state
+    else
+      saved_state = diagram.state()
+    draw()
     running = not running
 
 canvas.addEventListener 'mousedown', (e) ->
