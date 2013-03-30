@@ -143,14 +143,10 @@ tests = [
     assert.equal 1, p2.tokens
     assert.equal 1, p3.tokens
   ->
-    p1 = new Pool 1
-    p2 = new Pool
+    p = new Pool
     activated = 0
-    t = new Trigger p2, {activate:->activated++}
-    p1.arrow p2
-    p1.push()
+    t = new Trigger p, {activate:->activated++}
+    p.give 1
     assert.equal activated, 1, 'activated'
-    assert.equal p1.tokens, 0, 'p1 tokens'
-    assert.equal p2.tokens, 1, 'p2 tokens'
 ]
 t() for t in tests
