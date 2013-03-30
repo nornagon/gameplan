@@ -50,7 +50,8 @@ Pool::draw = ->
   ctx.fillText @tokens, @p.x, @p.y
 
 Arrow::addView = ->
-  @shape = segment 0,0, 0,0, 2
+  @controlPoints = [@src, @dst]
+  @shape = segment 0,0, 0,0, 4
   @updateSegment()
   @shape.cachePos()
   index.insert @shape
@@ -75,22 +76,31 @@ Arrow::updateSegment = ->
 
 
 Arrow::draw = ->
-  ctx.strokeStyle = 'red'
   a = @shape.ta
   b = @shape.tb
 
+  stroke = ->
+    ctx.beginPath()
+    ctx.moveTo a.x, a.y
+    ctx.lineTo b.x, b.y
+    n = v.normalize v.sub a, b
+    left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/6), 10
+    right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/6), 10
+    ctx.moveTo left.x, left.y
+    ctx.lineTo b.x, b.y
+    ctx.lineTo right.x, right.y
+    ctx.stroke()
+
   ctx.lineCap = 'round'
+  
+  if this is hovered
+    ctx.strokeStyle = 'orange'
+    ctx.lineWidth = 5
+    stroke()
+
+  ctx.strokeStyle = 'black'
   ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo a.x, a.y
-  ctx.lineTo b.x, b.y
-  n = v.normalize v.sub a, b
-  left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/4), 6
-  right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/4), 6
-  ctx.moveTo left.x, left.y
-  ctx.lineTo b.x, b.y
-  ctx.lineTo right.x, right.y
-  ctx.stroke()
+  stroke()
 
 Arrow::z = 0
 
@@ -182,7 +192,7 @@ objectAt = (mouse) ->
 
   result = null
   index.pointQuery mouse, (s) ->
-    if s.pointQuery(mouse) and s.owner not instanceof Arrow
+    if s.pointQuery(mouse)
       result = s.owner
 
   result
@@ -258,6 +268,7 @@ window.addEventListener 'keydown', (e) ->
 canvas.addEventListener 'mousedown', (e) ->
   mouse = v e.offsetX, e.offsetY
   dragged = hover = objectAt mouse
+  dragged = null if dragged instanceof Arrow
   if running
     if dragged
       dragged.activate?()
