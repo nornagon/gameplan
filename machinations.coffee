@@ -35,7 +35,7 @@ class Pool
   take: (n) ->
     n = Math.min n, @tokens
     @tokens -= n
-    @emit 'out', n
+    @emit 'out', n if n > 0
     n
   give: (n) ->
     @tokens += n
@@ -56,7 +56,8 @@ class Pool
 
   push: ->
     for a in @out_arrows
-      a.push @take a.label
+      n = @take a.label
+      a.push n if n > 0
     return
 
   activate: ->
