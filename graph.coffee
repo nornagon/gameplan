@@ -85,34 +85,32 @@ Arrow::updateSegments = ->
 
     shape.cachePos()
 
+Segment::strokeArrow = ->
+  a = @ta
+  b = @tb
+  ctx.beginPath()
+  ctx.moveTo a.x, a.y
+  ctx.lineTo b.x, b.y
+  n = v.normalize v.sub a, b
+  left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/6), 10
+  right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/6), 10
+  ctx.moveTo left.x, left.y
+  ctx.lineTo b.x, b.y
+  ctx.lineTo right.x, right.y
+  ctx.stroke()
 
 Arrow::draw = ->
   for shape in @shapes
-    a = shape.ta
-    b = shape.tb
-
-    stroke = ->
-      ctx.beginPath()
-      ctx.moveTo a.x, a.y
-      ctx.lineTo b.x, b.y
-      n = v.normalize v.sub a, b
-      left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/6), 10
-      right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/6), 10
-      ctx.moveTo left.x, left.y
-      ctx.lineTo b.x, b.y
-      ctx.lineTo right.x, right.y
-      ctx.stroke()
-
     ctx.lineCap = 'round'
     
     if this is hovered
       ctx.strokeStyle = 'orange'
       ctx.lineWidth = 5
-      stroke()
+      shape.strokeArrow()
 
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 2
-    stroke()
+    shape.strokeArrow()
 
 Arrow::z = 0
 
