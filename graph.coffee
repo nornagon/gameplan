@@ -110,6 +110,14 @@ drawGrid = ->
   ctx.strokeStyle = 'hsl(205,77%,76%)'
   ctx.lineWidth = 0.5
   ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo 0, 0
+  ctx.lineTo canvas.width, 0
+  ctx.lineTo canvas.width, canvas.height
+  ctx.lineTo 0, canvas.height
+  ctx.closePath()
+  ctx.lineWidth = 2
+  ctx.stroke()
   ctx.lineWidth = 1
 
 draw = ->
