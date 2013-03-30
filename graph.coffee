@@ -77,13 +77,13 @@ Arrow::draw = ->
       b = v.add v.mult(n, 6), v.lerp(@shape.ta, @shape.tb, q.t)
 
   ctx.lineCap = 'round'
-  ctx.lineWidth = 4
+  ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo a.x, a.y
   ctx.lineTo b.x, b.y
   n = v.normalize v.sub a, b
-  left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/4), 10
-  right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/4), 10
+  left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/4), 6
+  right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/4), 6
   ctx.moveTo left.x, left.y
   ctx.lineTo b.x, b.y
   ctx.lineTo right.x, right.y
