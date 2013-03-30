@@ -5,17 +5,10 @@ Array::setRemove = (obj) ->
     @length--
   i
 
-class Node
-  constructor: ->
+class Pool
+  constructor: (@tokens = 0)->
     @out_arrows = []
     @in_arrows = []
-
-  arrow: (to) ->
-    new Arrow @, to
-
-class Pool extends Node
-  constructor: (@tokens = 0)->
-    super
     @mode = 'pull-all'
 
   take: (n) ->
@@ -86,9 +79,10 @@ class Modifier
     @src.removeListener 'in', @in_listener
     @src.removeListener 'out', @out_listener
 
-class Gate extends Node
+class Gate
   constructor: ->
-    super
+    @out_arrows = []
+    @in_arrows = []
     @mode = 'random'
     @count = 0
 
@@ -114,7 +108,7 @@ class Gate extends Node
         return a
     return
 
-assert = require 'assert'
+#assert = require 'assert'
 tests = [
   ->
     p1 = new Pool 1
@@ -170,4 +164,4 @@ tests = [
     p2.push()
     assert.equal a.label, 1
 ]
-t() for t in tests
+#t() for t in tests
