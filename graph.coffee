@@ -19,7 +19,7 @@ setShape = (node, shape) ->
 
 Pool::addView = (x, y) ->
   @p = v x, y
-  setShape this, circle 0, 0, 30
+  setShape this, circle 0, 0, 20
 
 Pool::type = 'pool'
 
@@ -64,13 +64,14 @@ Arrow::z = 0
 Gate::addView = (x, y) ->
   @p = v x, y
   setShape this, poly 0, 0, [
-    -10, 0
-    0, 10
-    10, 0
-    0, -10
+    -20, 0
+    0, 20
+    20, 0
+    0, -20
   ]
 
 Gate::draw = ->
+  ctx.fillStyle = if this is hovered then 'blue' else 'white'
   @shape.draw()
 
 Gate::z = 1
@@ -81,6 +82,7 @@ Gate::z = 1
 do ->
   d = new Diagram
   p1 = d.add new Pool 2
+  p1.mode = 'push'
   p1.addView 100, 100
   p2 = d.add new Pool 0
   p2.addView 400, 300
