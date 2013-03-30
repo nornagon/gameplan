@@ -17,13 +17,13 @@ setShape = (node, shape) ->
   node.shape = shape
   shape.owner = node
 
+# A list of objects with layered draw functions.
+views = []
+
 Pool::addView = (x, y) ->
   @p = v x, y
   setShape this, circle 0, 0, 20
-
-Pool::type = 'pool'
-
-Pool::z = 1
+  views.push this
 
 Pool::moveBy = Gate::moveBy = (delta) ->
   @p = v.add @p, delta
@@ -32,7 +32,7 @@ Pool::moveBy = Gate::moveBy = (delta) ->
   arr.updateSegments() for arr in @out_arrows
   arr.updateSegments() for arr in @in_arrows
 
-Pool::draw = ->
+Pool::draw = nodes: ->
   if this is hovered
     @shape.path()
     ctx.strokeStyle = 'orange'
@@ -49,6 +49,29 @@ Pool::draw = ->
   ctx.textBaseline = 'middle'
   ctx.fillText @tokens, @p.x, @p.y
 
+
+Gate::addView = (x, y) ->
+  @p = v x, y
+  setShape this, poly 0, 0, [
+    -20, 0
+    0, 20
+    20, 0
+    0, -20
+  ]
+
+  views.push this
+
+Gate::draw = nodes: ->
+  if this is hovered
+    @shape.path()
+    ctx.strokeStyle = 'orange'
+    ctx.lineWidth = 8
+    ctx.lineJoin = 'round'
+    ctx.stroke()
+  ctx.fillStyle = 'white'
+  @shape.draw()
+
+
 Arrow::addView = ->
   # The control points list is a->b->c etc and shapes is the
   # segments a->b, b->c. The shapes list will have 1 less element
@@ -60,6 +83,18 @@ Arrow::addView = ->
   shape.owner = this
   
   @updateSegments()
+
+  #@spawnControlPoints()
+
+  views.push this
+
+Arrow::spawnControlPoints = ->
+  @cpShapes = for c in @controlPoints
+    s = rect -4, -4, 8, 8
+    s.cachePos c.p
+    index.insert s
+    s.owner = this
+    s
 
 Arrow::updateSegments = ->
   # Could optimise this to only update the needed segment, but I don't
@@ -99,41 +134,26 @@ Segment::strokeArrow = ->
   ctx.lineTo right.x, right.y
   ctx.stroke()
 
-Arrow::draw = ->
-  for shape in @shapes
-    ctx.lineCap = 'round'
-    
-    if this is hovered
-      ctx.strokeStyle = 'orange'
-      ctx.lineWidth = 5
+Arrow::draw =
+  arrowline: ->
+    for shape in @shapes
+      ctx.lineCap = 'round'
+      
+      if this is hovered
+        ctx.strokeStyle = 'orange'
+        ctx.lineWidth = 5
+        shape.strokeArrow()
+
+      ctx.strokeStyle = 'black'
+      ctx.lineWidth = 2
       shape.strokeArrow()
 
-    ctx.strokeStyle = 'black'
-    ctx.lineWidth = 2
-    shape.strokeArrow()
-
-Arrow::z = 0
-
-Gate::addView = (x, y) ->
-  @p = v x, y
-  setShape this, poly 0, 0, [
-    -20, 0
-    0, 20
-    20, 0
-    0, -20
-  ]
-
-Gate::draw = ->
-  if this is hovered
-    @shape.path()
-    ctx.strokeStyle = 'orange'
-    ctx.lineWidth = 8
-    ctx.lineJoin = 'round'
-    ctx.stroke()
-  ctx.fillStyle = 'white'
-  @shape.draw()
-
-Gate::z = 1
+  controlpoints: ->
+    ctx.strokeStyle = 'blue'
+    if @cpShapes then for cp in @cpShapes
+      cp.path()
+      ctx.stroke()
+      cp.draw()
 
 #index.insert rect 500, 500, 100, 100
 #index.insert segment 200, 300, 500, 500, 5
@@ -187,13 +207,19 @@ draw = ->
   ctx.fillRect 0, 0, canvas.width, canvas.height
   drawGrid()
 
-  nodes = []
-  index.each (s) -> nodes.push s.owner
-  nodes.sort (a, b) -> (a.z ? 0) - (b.z ? 0)
+  # Collect all the draw functions
+  layers = {}
+  for v in views
+    for layer, drawfn of v.draw
+      (layers[layer] ||= []).push [v, drawfn]
 
-  n.draw() for n in nodes
+  # Call them.
+  drawnLayers = ['arrowline', 'nodes', 'controlpoints']
+  for layer in drawnLayers
+    d.call v for [v, d] in layers[layer]
 
-
+  # Check we're drawing everything
+  console.log "not drawing #{l}" for l of layers when l not in drawnLayers
 
 draw()
 
