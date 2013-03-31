@@ -399,12 +399,22 @@ mouse = v 0,0
 
 run_indicator = ui_root.appendChild tag 'div'
 style run_indicator,
-  position: 'absolute', left: '5px', bottom: '9px'
+  position: 'absolute', left: '5px', bottom: '37px'
   border: '5px solid red'
   borderRadius: '10px'
   opacity: '0'
 run_indicator.animateIn = -> style run_indicator, opacity: '1'
 run_indicator.animateOut = -> style run_indicator, opacity: '0'
+
+toolbar = ui_root.appendChild makeToolbar()
+toolbar.appendChild(makePlaceButton('pool')).onclick = -> place 'pool', this
+toolbar.appendChild(makePlaceButton('gate')).onclick = -> place 'gate', this
+toolbar.appendChild(makePlaceButton('arrow')).onclick = -> place 'arrow', this
+
+place = (type, button) ->
+  if ui.state is ui.placing
+    ui.pop()
+  ui.push ui.placing, type, button
 
 run = ->
   running = true
@@ -430,6 +440,7 @@ ui =
     @state = state
     @state.enter? args...
   pop: ->
+    @state.leave?()
     @state = @states.pop()
 
 ui.default =
@@ -473,6 +484,35 @@ ui.dragging =
     canvas.style.cursor = ''
     ui.pop()
 
+ui.placing =
+  enter: (@type, @button) ->
+    @button.style.boxShadow = '0px 0px 4px red'
+  leave: ->
+    @button.style.boxShadow = 'initial'
+  mousedown: (e) ->
+    if @type is 'pool'
+      p = diagram.add new Pool
+      p.addView mouse.x, mouse.y
+      ui.pop()
+      ui.push ui.dragging, p
+    else if @type is 'gate'
+      p = diagram.add new Gate
+      p.addView mouse.x, mouse.y
+      ui.pop()
+      ui.push ui.dragging, p
+    else if @type is 'arrow'
+      if s = shapeAt mouse
+        src = s.owner
+      else
+        src = {p:v(mouse.x, mouse.y),out_arrows:[]}
+      a = diagram.add new Arrow src, {p:v(mouse.x, mouse.y),in_arrows:[]}
+      a.addView()
+      ui.pop()
+      select a
+      ui.push ui.dragging, a, a.cpShapes[1]
+      a
+    draw()
+
 ui.running =
   mousedown: (e) ->
     s = shapeAt mouse
@@ -490,7 +530,7 @@ canvas.addEventListener 'mousedown', (e) ->
   mouse = v e.offsetX, e.offsetY
   ui.state.mousedown? e
   return false
-canvas.addEventListener 'mouseup', (e) ->
+window.addEventListener 'mouseup', (e) ->
   ui.state.mouseup? e
   return false
 canvas.addEventListener 'mousemove', (e) ->
