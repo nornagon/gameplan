@@ -408,6 +408,7 @@ mouse = v 0,0
 run_indicator = ui_root.appendChild tag 'div'
 style run_indicator,
   position: 'absolute', left: '5px', bottom: '5px'
+  transition: '150ms'
   border: '5px solid red'
   borderRadius: '10px'
   opacity: '0'
