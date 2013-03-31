@@ -180,21 +180,25 @@ Arrow = (function() {
   }
 
   Arrow.prototype.setSrc = function(src) {
-    var _ref, _ref1;
+    var _ref, _ref1, _ref2, _ref3;
     if ((_ref = this.src) != null) {
-      _ref.out_arrows.setRemove(this);
+      if ((_ref1 = _ref.out_arrows) != null) {
+        _ref1.setRemove(this);
+      }
     }
     this.src = src;
-    return (_ref1 = this.src) != null ? _ref1.out_arrows.push(this) : void 0;
+    return (_ref2 = this.src) != null ? (_ref3 = _ref2.out_arrows) != null ? _ref3.push(this) : void 0 : void 0;
   };
 
   Arrow.prototype.setDst = function(dst) {
-    var _ref, _ref1;
+    var _ref, _ref1, _ref2, _ref3;
     if ((_ref = this.dst) != null) {
-      _ref.in_arrows.setRemove(this);
+      if ((_ref1 = _ref.in_arrows) != null) {
+        _ref1.setRemove(this);
+      }
     }
     this.dst = dst;
-    return (_ref1 = this.dst) != null ? _ref1.in_arrows.push(this) : void 0;
+    return (_ref2 = this.dst) != null ? (_ref3 = _ref2.in_arrows) != null ? _ref3.push(this) : void 0 : void 0;
   };
 
   Arrow.prototype.remove = function() {

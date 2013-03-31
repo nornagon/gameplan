@@ -181,7 +181,7 @@ Arrow.prototype.removeView = function() {
 
 Arrow.prototype.makeControlPoint = function(p) {
   var s;
-  s = circle(0, 0, 5);
+  s = circle(0, 0, 4);
   s.layer = 'controlPoints';
   s.cachePos(p);
   s.owner = this;
@@ -366,13 +366,13 @@ Arrow.prototype.draw = {
   controlPoints: function() {
     var cp, _i, _len, _ref, _results;
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'black';
+    ctx.strokeStyle = 'red';
     if (this.cpShapes) {
       _ref = this.cpShapes;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         cp = _ref[_i];
-        ctx.fillStyle = cp === selectedShape ? 'blue' : 'white';
+        ctx.fillStyle = cp === selectedShape ? 'red' : 'white';
         cp.path();
         ctx.fill();
         _results.push(ctx.stroke());
@@ -644,6 +644,7 @@ ui["default"] = {
         saved_state = diagram.state();
         return run();
       case 8:
+        e.preventDefault();
         if (selected != null) {
           selected.removeView();
         }
@@ -711,12 +712,12 @@ ui.placing = {
       } else {
         src = {
           p: v(mouse.x, mouse.y),
-          out_arrows: []
+          floating: true
         };
       }
       a = diagram.add(new Arrow(src, {
         p: v(mouse.x, mouse.y),
-        in_arrows: []
+        floating: true
       }));
       a.addView();
       ui.pop();
