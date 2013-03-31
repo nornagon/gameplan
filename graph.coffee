@@ -35,6 +35,11 @@ Pool::moveBy = Gate::moveBy = (delta) ->
   arr.updateSegments() for arr in @out_arrows
   arr.updateSegments() for arr in @in_arrows
 
+Pool::removeView = Gate::removeView = ->
+  index.remove @shape
+  views.setRemove this
+  hovered = null if this is hovered
+
 Pool::draw = nodes: ->
   if this is hovered or this is selected
     @shape.path()
@@ -90,6 +95,12 @@ Arrow::addView = ->
   @updateSegments()
 
   views.push this
+
+Arrow::removeView = ->
+  index.remove s for s in @shapes
+  index.remove c for c in @cpShapes if @cpShapes
+  views.setRemove this
+  hovered = null if this is hovered
 
 Arrow::makeControlPoint = (p) ->
   s = circle 0, 0, 5
@@ -195,7 +206,7 @@ Arrow::draw =
   arrowLine: ->
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-      
+
     if this is hovered or this is selected
       ctx.strokeStyle = if this is selected
         'hsl(192,77%,48%)'
@@ -204,7 +215,6 @@ Arrow::draw =
 
       ctx.lineWidth = 5
       @strokeArrow()
-
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 2
     @strokeArrow()
@@ -258,6 +268,7 @@ do ->
 
 drawGrid = ->
   gridSize = 40
+  ctx.beginPath()
   for y in [1...(canvas.height/gridSize)|0]
     ctx.moveTo 0, y*gridSize+0.5
     ctx.lineTo canvas.width-1, y*gridSize+0.5
@@ -397,15 +408,22 @@ ui.default =
     else
       select null
   keydown: (e) ->
-    if e.which is 32
-      e.preventDefault()
-      saved_state = diagram.state()
-      run()
+    switch e.which
+      when 32 # space bar
+        e.preventDefault()
+        saved_state = diagram.state()
+        run()
+      when 8 # backspace and delete
+        obj = selected
+        select null
+        obj?.remove()
+        draw()
 
 ui.dragging =
   enter: (@object, @shape) ->
     @dragPos = mouse
     select @object, @shape
+    canvas.style.cursor = 'move'
   mousedown: (e) ->
     @object.doubleClicked? mouse if e.detail is 2
   mousemove: (e) ->
@@ -416,6 +434,7 @@ ui.dragging =
     draw()
   mouseup: (e) ->
     select @object, @shape
+    canvas.style.cursor = ''
     ui.pop()
 
 ui.running =

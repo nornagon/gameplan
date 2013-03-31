@@ -93,6 +93,7 @@ class Arrow
   remove: ->
     @setSrc null
     @setDst null
+    @removeView?()
   canPull: -> @src and @src.take? and @src.tokens >= @label
   pullAny: ->
     if @src and @src.take? then @src.take @label else 0
@@ -154,6 +155,11 @@ class Gate
     return
 
   reset: -> @count = 0
+
+Pool::remove = Gate::remove = ->
+  a.remove() for a in @out_arrows
+  a.remove() for a in @in_arrows
+  @removeView?()
 
 if typeof window is 'undefined'
   assert = require 'assert'
