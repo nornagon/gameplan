@@ -356,6 +356,8 @@ ui.default =
       draw()
       running = true
       hovered = null
+      options_ui?.animateOut()
+      options_ui = null
       ui.push ui.running
 
 ui.dragging =

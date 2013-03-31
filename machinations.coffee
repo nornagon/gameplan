@@ -93,11 +93,11 @@ class Arrow
   remove: ->
     @setSrc null
     @setDst null
-  canPull: -> @src and @src.tokens >= @label
+  canPull: -> @src and @src.take? and @src.tokens >= @label
   pullAny: ->
-    if @src then @src.take @label else 0
+    if @src and @src.take? then @src.take @label else 0
   pull: ->
-    if @src and @src.tokens >= @label
+    if @src and @src.take? and @src.tokens >= @label
       return @src.take @label
     return 0
   push: (n) ->

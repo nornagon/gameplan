@@ -37,9 +37,10 @@ makeOptionsUIFor = (o) ->
     width: '150px'
     borderRadius: '4px'
     background: 'hsla(205,77%,76%,0.0)'
-    border:     '2px solid hsla(205,77%,76%,0.0)'
+    border: '2px solid hsla(205,77%,76%,0.0)'
     webkitTransition: '150ms'
     pointerEvents: 'auto'
+    lineHeight: '0.8'
 
   sweep =
     webkitTransition: '150ms'
@@ -49,25 +50,37 @@ makeOptionsUIFor = (o) ->
 
   title = tag 'div', o.constructor.name
   style title, sweep
+  style title, textDecoration: 'underline', marginBottom: '5px'
 
   makeRadio = (group, label) ->
-    push = tag 'div'
-    style push, sweep
-    radio = push.appendChild tag 'input'
+    t = tag 'div'
+    radio = t.appendChild tag 'input'
     radio.setAttribute 'type', 'radio'
     radio.setAttribute 'name', group
-    push.appendChild tag 'label', label
-    push
-  action = tag 'div', 'action'
-  style action, sweep
-  push = makeRadio 'action', 'push'
-  pull = makeRadio 'action', 'pull'
-  if o.mode is 'pull-any'
-    pull.firstChild.checked = true
-  else
-    push.firstChild.checked = true
+    t.appendChild tag 'label', label
+    t
 
-  els = [title, action, push, pull]
+  if o instanceof Pool
+    action = tag 'div', 'Action:'
+    style action, sweep
+    push = makeRadio 'action', 'push'
+    style push, sweep
+    pull = makeRadio 'action', 'pull'
+    style pull, sweep
+    if o.mode is 'pull-any'
+      pull.firstChild.checked = true
+    else
+      push.firstChild.checked = true
+
+    push.onclick = pull.onclick = ->
+      o.mode = if push.firstChild.checked
+        'push'
+      else if pull.firstChild.checked
+        'pull-any'
+
+    els = [title, action, push, pull]
+  else
+    els = [title]
 
   div.appendChild t for t in els
 
@@ -80,13 +93,13 @@ makeOptionsUIFor = (o) ->
       t.style.opacity = '1'
       t.style.left = '0'
     div.style.background = 'hsla(205,77%,76%,0.2)'
-    div.style.border =     '2px solid hsla(205,77%,76%,0.3)'
+    div.style.border = '2px solid hsla(205,77%,76%,0.3)'
   animateOut: ->
     for t in els
       t.style.opacity = '0'
       t.style.left = sweepIn
     div.style.background = 'hsla(205,77%,76%,0.0)'
-    div.style.border =     '2px solid hsla(205,77%,76%,0.0)'
+    div.style.border = '2px solid hsla(205,77%,76%,0.0)'
     els[0].addEventListener 'transitionend', ->
       div.remove()
 
