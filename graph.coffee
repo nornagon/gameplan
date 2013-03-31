@@ -133,7 +133,7 @@ Arrow::removeView = ->
     select null if this is selected
 
 Arrow::makeControlPoint = (p) ->
-  s = circle 0, 0, 5
+  s = circle 0, 0, 4
   s.layer = 'controlPoints'
   s.cachePos p
   s.owner = this
@@ -274,9 +274,9 @@ Arrow::draw =
 
   controlPoints: ->
     ctx.lineWidth = 1.5
-    ctx.strokeStyle = 'black'
+    ctx.strokeStyle = 'red'
     if @cpShapes then for cp in @cpShapes
-      ctx.fillStyle = if cp is selectedShape then 'blue' else 'white'
+      ctx.fillStyle = if cp is selectedShape then 'red' else 'white'
       cp.path()
       ctx.fill()
       ctx.stroke()
@@ -464,6 +464,7 @@ ui.default =
         saved_state = diagram.state()
         run()
       when 8 # backspace and delete
+        e.preventDefault()
         selected?.removeView()
         draw()
 
@@ -504,8 +505,8 @@ ui.placing =
       if s = shapeAt mouse
         src = s.owner
       else
-        src = {p:v(mouse.x, mouse.y),out_arrows:[]}
-      a = diagram.add new Arrow src, {p:v(mouse.x, mouse.y),in_arrows:[]}
+        src = {p:v(mouse.x, mouse.y), floating:true}
+      a = diagram.add new Arrow src, {p:v(mouse.x, mouse.y),floating:true}
       a.addView()
       ui.pop()
       select a

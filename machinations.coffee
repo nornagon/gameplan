@@ -82,13 +82,13 @@ class Arrow
     @setDst dst
     @label = 1
   setSrc: (src) ->
-    @src?.out_arrows.setRemove @
+    @src?.out_arrows?.setRemove @
     @src = src
-    @src?.out_arrows.push @
+    @src?.out_arrows?.push @
   setDst: (dst) ->
-    @dst?.in_arrows.setRemove @
+    @dst?.in_arrows?.setRemove @
     @dst = dst
-    @dst?.in_arrows.push @
+    @dst?.in_arrows?.push @
       
   remove: ->
     @setSrc null
