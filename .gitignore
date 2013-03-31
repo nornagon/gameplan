@@ -1,9 +1,3 @@
 *.swp
 *.DS_Store
 node_modules
-collision.js
-graph.js
-machinations.js
-options.js
-shapes.js
-vect.js
