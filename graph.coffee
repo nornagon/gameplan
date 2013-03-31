@@ -293,18 +293,18 @@ select = (o, s) ->
     selectedShape = s
     selected?.select?()
 
-  if selected
-    new_options_ui = makeOptionsUIFor selected
-    ui_root.appendChild new_options_ui.el
-    setTimeout ->
-      new_options_ui.animateIn()
-    , 0
-    options_ui.animateOut() if options_ui
-    options_ui = new_options_ui
-  else
-    if options_ui
-      options_ui.animateOut()
-      options_ui = null
+    if selected
+      new_options_ui = makeOptionsUIFor selected
+      ui_root.appendChild new_options_ui.el
+      setTimeout ->
+        new_options_ui.animateIn()
+      , 0
+      options_ui.animateOut() if options_ui
+      options_ui = new_options_ui
+    else
+      if options_ui
+        options_ui.animateOut()
+        options_ui = null
   draw()
 
 shapeAt = (mouse) ->
