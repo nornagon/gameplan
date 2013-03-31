@@ -35,6 +35,10 @@ Pool::moveBy = Gate::moveBy = (delta) ->
   arr.updateSegments() for arr in @out_arrows
   arr.updateSegments() for arr in @in_arrows
 
+Pool::moveTo = Gate::moveTo = (pos) ->
+  delta = v.sub pos, @p
+  @moveBy delta
+
 Pool::removeView = Gate::removeView = ->
   arr.removeView() for arr in @out_arrows
   arr.removeView() for arr in @in_arrows
@@ -148,10 +152,7 @@ Arrow::deselect = ->
     index.remove s
   @cpShapes = null
 
-Arrow::moveTo = (p) ->
-  return unless selectedShape.layer is 'controlPoints'
-  # Move the control point
-
+Arrow::moveControlPointTo = (p) ->
   i = @cpShapes.indexOf selectedShape
 
   target = null
@@ -170,14 +171,19 @@ Arrow::moveTo = (p) ->
 
   @updateSegments()
 
-Arrow::moveBy = (delta) ->
-  # moveTo is also called, and it will handle moving individual
-  # control points.
-  return unless selectedShape.layer is 'arrowLine'
+Arrow::moveTo = (p) ->
+  return unless selectedShape.layer is 'controlPoints'
+  @moveControlPointTo p
 
-  for c in @controlPoints
-    c.p = v.add c.p, delta if c.floating
-  @updateSegments()
+Arrow::moveBy = (delta) ->
+  # moveBy is called when not snapping to grid
+  if selectedShape.layer is 'controlPoints'
+    p = v mouse.x, mouse.y
+    @moveControlPointTo p
+  else if selectedShape.layer is 'arrowLine'
+    for c in @controlPoints
+      c.p = v.add c.p, delta if c.floating
+    @updateSegments()
 
 
 # Returns 0-1
@@ -305,8 +311,10 @@ do ->
   a.addView()
 
 
+gridSize = 40
+nearestGridPointTo = (vect) ->
+  v Math.round(vect.x/gridSize)*gridSize, Math.round(vect.y/gridSize)*gridSize
 drawGrid = ->
-  gridSize = 40
   ctx.beginPath()
   for y in [1...(canvas.height/gridSize)|0]
     ctx.moveTo 0, y*gridSize+0.5
@@ -478,8 +486,10 @@ ui.dragging =
   mousemove: (e) ->
     delta = v.sub mouse, @dragPos
     @dragPos = mouse
-    @object.moveBy? delta
-    @object.moveTo? mouse
+    if e.shiftKey
+      @object.moveTo? nearestGridPointTo mouse
+    else
+      @object.moveBy? delta
     draw()
   mouseup: (e) ->
     canvas.style.cursor = ''
