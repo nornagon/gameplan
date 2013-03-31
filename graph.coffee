@@ -2,14 +2,18 @@ canvas = document.getElementsByTagName('canvas')[0]
 canvas.width = 801
 canvas.height = 601
 
+drawnLayers = ['nodes', 'arrowLine', 'glow', 'controlPoints']
+
 ctx = canvas.getContext '2d'
 
 selected = null
+selectedShape = null
 # Object the mouse is hovering on
 hovered = null
 index = new BBTree()
 
 setShape = (node, shape) ->
+  shape.layer = 'nodes'
   shape.cachePos node.p
   index.insert shape
 
@@ -75,24 +79,49 @@ Arrow::addView = ->
   # segments a->b, b->c. The shapes list will have 1 less element
   # than control points.
   @controlPoints = [@src, @dst]
-  shape = segment 0,0, 0,0, 4
+  shape = segment 0,0, 0,0, 6
+  shape.layer = 'arrowLine'
   @shapes = [shape]
   index.insert shape
   shape.owner = this
   
   @updateSegments()
 
-  #@spawnControlPoints()
-
   views.push this
 
-Arrow::spawnControlPoints = ->
+Arrow::select = ->
+  # Spawn control points
   @cpShapes = for c in @controlPoints
-    s = rect -4, -4, 8, 8
+    w = 10
+    #s = rect -w/2, -w/2, w, w
+    s = circle 0, 0, w/2
+    s.layer = 'controlPoints'
     s.cachePos c.p
     index.insert s
     s.owner = this
     s
+
+Arrow::deselect = ->
+  if @cpShapes then for s in @cpShapes
+    index.remove s
+  @cpShapes = null
+
+Arrow::moveTo = (p) ->
+  return unless selectedShape.layer is 'controlPoints'
+
+  i = @cpShapes.indexOf selectedShape
+
+  target = null
+  index.pointQuery p, (s) ->
+    return unless s.layer is 'nodes'
+    target = s.owner if s.pointQuery(mouse)
+
+  hovered = target
+  if target
+    @controlPoints[i] = target
+  else
+    @controlPoints[i] = {p}
+  @updateSegments()
 
 Arrow::updateSegments = ->
   # Could optimise this to only update the needed segment, but I don't
@@ -118,6 +147,9 @@ Arrow::updateSegments = ->
 
     shape.cachePos()
 
+  if @cpShapes then for s,i in @cpShapes
+    s.cachePos @controlPoints[i].p
+
 Segment::strokeArrow = ->
   a = @ta
   b = @tb
@@ -133,12 +165,16 @@ Segment::strokeArrow = ->
   ctx.stroke()
 
 Arrow::draw =
-  arrowline: ->
+  arrowLine: ->
     for shape in @shapes
       ctx.lineCap = 'round'
       
-      if this is hovered
-        ctx.strokeStyle = 'orange'
+      if this is hovered or this is selected
+        ctx.strokeStyle = if this is selected
+          'hsl(192,77%,48%)'
+        else
+          'orange'
+
         ctx.lineWidth = 5
         shape.strokeArrow()
 
@@ -146,12 +182,28 @@ Arrow::draw =
       ctx.lineWidth = 2
       shape.strokeArrow()
 
-  controlpoints: ->
-    ctx.strokeStyle = 'blue'
+  glow: ->
+    return unless this is selected
+    ctx.lineWidth = 10
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    for cp,i in @controlPoints
+      if i is 0
+        ctx.moveTo cp.p.x, cp.p.y
+      else
+        ctx.lineTo cp.p.x, cp.p.y
+
+    ctx.strokeStyle = 'hsla(192,77%,48%,0.2)'
+    ctx.stroke()
+
+  controlPoints: ->
+    ctx.lineWidth = 1.5
+    ctx.strokeStyle = 'black'
     if @cpShapes then for cp in @cpShapes
+      ctx.fillStyle = if cp is selectedShape then 'blue' else 'white'
       cp.path()
+      ctx.fill()
       ctx.stroke()
-      cp.draw()
 
 #index.insert rect 500, 500, 100, 100
 #index.insert segment 200, 300, 500, 500, 5
@@ -212,27 +264,38 @@ draw = ->
       (layers[layer] ||= []).push [v, drawfn]
 
   # Call them.
-  drawnLayers = ['arrowline', 'nodes', 'controlpoints']
   for layer in drawnLayers
     d.call v for [v, d] in layers[layer]
 
   # Check we're drawing everything
-  console.log "not drawing #{l}" for l of layers when l not in drawnLayers
+  console.warn "not drawing #{l}" for l of layers when l not in drawnLayers
 
 setTimeout ->
   draw()
 , 50
 
-select = (o) ->
-  selected = o
+select = (o, s) ->
+  if o is selected
+    selectedShape = s
+  else
+    selected?.deselect?()
+    selected = o
+    selectedShape = s
+    selected?.select?()
+
   draw()
 
-objectAt = (mouse) ->
-
+shapeAt = (mouse) ->
   result = null
+  resultLayerId = -1
   index.pointQuery mouse, (s) ->
-    if s.pointQuery(mouse)
-      result = s.owner
+    return console.error "shape #{s} does not have a layer" unless s.layer
+    layerId = drawnLayers.indexOf s.layer
+    return console.error "unknown layer #{s.layer}" if layerId is -1
+
+    if resultLayerId < layerId and s.pointQuery(mouse)
+      result = s
+      resultLayerId = layerId
 
   result
 
@@ -253,14 +316,15 @@ ui =
 
 ui.default =
   mousemove: (e) ->
-    o = objectAt mouse
+    s = shapeAt mouse
+    o = s?.owner
     if hovered isnt o
       hovered = o
       draw()
   mousedown: (e) ->
-    o = objectAt mouse
-    if o and o not instanceof Arrow
-      ui.push ui.dragging, o
+    s = shapeAt mouse
+    if s
+      ui.push ui.dragging, s.owner, s
     else
       select null
   keydown: (e) ->
@@ -273,23 +337,24 @@ ui.default =
       ui.push ui.running
 
 ui.dragging =
-  enter: (obj) ->
-    @object = obj
+  enter: (@object, @shape) ->
     @dragPos = mouse
   mousemove: (e) ->
+    select @object, @shape
     delta = v.sub mouse, @dragPos
     @dragPos = mouse
-    @object.moveBy delta
+    @object.moveBy? delta
+    @object.moveTo? mouse
     draw()
   mouseup: (e) ->
-    select @object
+    select @object, @shape
     ui.pop()
 
 ui.running =
   mousedown: (e) ->
-    o = objectAt mouse
-    if o and o not instanceof Arrow
-      o.activate()
+    s = shapeAt mouse
+    if s
+      s.owner.activate?()
       draw()
   keydown: (e) ->
     if e.which is 32
