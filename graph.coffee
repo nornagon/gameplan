@@ -407,7 +407,7 @@ mouse = v 0,0
 
 run_indicator = ui_root.appendChild tag 'div'
 style run_indicator,
-  position: 'absolute', left: '5px', bottom: '37px'
+  position: 'absolute', left: '5px', bottom: '5px'
   border: '5px solid red'
   borderRadius: '10px'
   opacity: '0'
@@ -415,9 +415,13 @@ run_indicator.animateIn = -> style run_indicator, opacity: '1'
 run_indicator.animateOut = -> style run_indicator, opacity: '0'
 
 toolbar = ui_root.appendChild makeToolbar()
+style toolbar, transition: '150ms'
 toolbar.appendChild(makePlaceButton('pool')).onclick = -> place 'pool', this
 toolbar.appendChild(makePlaceButton('gate')).onclick = -> place 'gate', this
 toolbar.appendChild(makePlaceButton('arrow')).onclick = -> place 'arrow', this
+
+toolbar.animateOut = -> style @, opacity: '0', bottom: '-20px'
+toolbar.animateIn = -> style @, opacity: '1', bottom: '0px'
 
 place = (type, button) ->
   if ui.state is ui.placing
@@ -432,12 +436,14 @@ run = ->
   options_ui = null
   ui.push ui.running
   run_indicator.animateIn()
+  toolbar.animateOut()
   draw()
 stop = ->
   running = false
   diagram.restore saved_state
   ui.pop()
   run_indicator.animateOut()
+  toolbar.animateIn()
   draw()
 
 ui =
