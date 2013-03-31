@@ -36,9 +36,12 @@ Pool::moveBy = Gate::moveBy = (delta) ->
   arr.updateSegments() for arr in @in_arrows
 
 Pool::removeView = Gate::removeView = ->
+  arr.removeView() for arr in @out_arrows
+  arr.removeView() for arr in @in_arrows
   index.remove @shape
   views.setRemove this
   hovered = null if this is hovered
+  select null if this is selected
 
 Pool::draw = nodes: ->
   if this is hovered or this is selected
@@ -97,10 +100,38 @@ Arrow::addView = ->
   views.push this
 
 Arrow::removeView = ->
-  index.remove s for s in @shapes
-  index.remove c for c in @cpShapes if @cpShapes
-  views.setRemove this
-  hovered = null if this is hovered
+  if @controlPoints.length > 2 and
+      this is selected and
+      selectedShape.layer is 'controlPoints'
+    # just remove the control point.
+    i = @cpShapes.indexOf selectedShape
+
+    @setSrc null if i is 0
+    @setDst null if i is @controlPoints.length - 1
+
+
+    if i < @shapes.length - 1
+      # Normally remove the shape in front of the point
+      index.remove @shapes[i]
+      @shapes.splice i, 1
+    else
+      # Remove the shape behind if they delete the last point.
+      index.remove @shapes[@shapes.length - 1]
+      @shapes.splice -1, 1
+    
+    if @cpShapes
+      index.remove @cpShapes[i]
+      @cpShapes.splice i, 1
+    @controlPoints.splice i, 1
+    @updateSegments()
+
+  else
+    index.remove s for s in @shapes
+    index.remove c for c in @cpShapes if @cpShapes
+    @cpShapes = null
+    views.setRemove this
+    hovered = null if this is hovered
+    select null if this is selected
 
 Arrow::makeControlPoint = (p) ->
   s = circle 0, 0, 5
@@ -120,6 +151,7 @@ Arrow::deselect = ->
 
 Arrow::moveTo = (p) ->
   return unless selectedShape.layer is 'controlPoints'
+  # Move the control point
 
   i = @cpShapes.indexOf selectedShape
 
@@ -132,14 +164,22 @@ Arrow::moveTo = (p) ->
   if target
     @controlPoints[i] = target
   else
-    @controlPoints[i] = {p}
+    @controlPoints[i] = {p, floating:true}
 
-  if i is 0
-    @setSrc target
-  if i is @controlPoints.length - 1
-    @setDst target
+  @setSrc target if i is 0
+  @setDst target if i is @controlPoints.length - 1
 
   @updateSegments()
+
+Arrow::moveBy = (delta) ->
+  # moveTo is also called, and it will handle moving individual
+  # control points.
+  return unless selectedShape.layer is 'arrowLine'
+
+  for c in @controlPoints
+    c.p = v.add c.p, delta if c.floating
+  @updateSegments()
+
 
 # Returns 0-1
 distBetween = (a, b, x) ->
@@ -150,7 +190,7 @@ Arrow::doubleClicked = (mouse) ->
   return unless selectedShape.layer is 'arrowLine'
 
   i = @shapes.indexOf selectedShape
-  @controlPoints.splice i+1, 0, {p:mouse}
+  @controlPoints.splice i+1, 0, {p:mouse, floating:true}
   @cpShapes.splice i+1, 0, @makeControlPoint mouse
   @shapes.splice i+1, 0, @makeSegment()
   @updateSegments()
@@ -414,9 +454,7 @@ ui.default =
         saved_state = diagram.state()
         run()
       when 8 # backspace and delete
-        obj = selected
-        select null
-        obj?.remove()
+        selected?.removeView()
         draw()
 
 ui.dragging =
@@ -433,7 +471,6 @@ ui.dragging =
     @object.moveTo? mouse
     draw()
   mouseup: (e) ->
-    select @object, @shape
     canvas.style.cursor = ''
     ui.pop()
 
