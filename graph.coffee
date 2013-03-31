@@ -418,9 +418,13 @@ canvas.addEventListener 'mousemove', (e) ->
   ui.state.mousemove? e
   return false
 window.addEventListener 'keydown', (e) ->
+  if document.activeElement.tagName is 'INPUT'
+    return
   ui.state.keydown? e
   return false
 window.addEventListener 'keyup', (e) ->
+  if document.activeElement.tagName is 'INPUT'
+    return
   ui.state.keyup? e
   return false
 

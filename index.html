@@ -12,6 +12,7 @@
   }
   body, html { height: 100%; margin: 0; }
   * { -webkit-user-select: none; }
+  input { -webkit-user-select: auto; }
   @font-face {
     font-family: 'IsoEur';
     src: url('Y14.5M-2009.ttf') format('truetype');
@@ -41,6 +42,15 @@
   }
   input[type=radio]:checked {
     background: orange;
+  }
+  input[type=number]::-webkit-inner-spin-button {
+    display: inline-block;
+    -webkit-appearance: none;
+    border-left: 1px solid black;
+    background: url('spin.png');
+    background-position-y: -2px;
+    width: 10px;
+    margin: 0;
   }
 </style>
 <body>

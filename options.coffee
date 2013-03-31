@@ -78,7 +78,24 @@ makeOptionsUIFor = (o) ->
       else if pull.firstChild.checked
         'pull-any'
 
-    els = [title, action, push, pull]
+    resources = tag 'div', 'Tokens: '
+    style resources, sweep
+    inp = resources.appendChild tag 'input'
+    inp.setAttribute 'type', 'number'
+    inp.value = o.tokens
+    inp.setAttribute 'min', '0'
+    style inp,
+      width: '40px'
+      background: 'transparent'
+      border: '1px solid black'
+      font: 'inherit'
+    inp.oninput = (e) ->
+      n = inp.valueAsNumber
+      n = 0 if isNaN n
+      o.tokens = n
+      draw()
+
+    els = [title, action, push, pull, resources]
   else
     els = [title]
 
