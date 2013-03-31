@@ -143,7 +143,9 @@ Arrow::doubleClicked = (mouse) ->
   @cpShapes.splice i+1, 0, @makeControlPoint mouse
   @shapes.splice i+1, 0, @makeSegment()
   @updateSegments()
-  #selectedShape = @cpShapes[i+1]
+
+  selectedShape = @cpShapes[i+1]
+  draw()
 
 Arrow::updateSegments = ->
   # Could optimise this to only update the needed segment, but I don't
@@ -403,10 +405,10 @@ ui.default =
 ui.dragging =
   enter: (@object, @shape) ->
     @dragPos = mouse
+    select @object, @shape
   mousedown: (e) ->
     @object.doubleClicked? mouse if e.detail is 2
   mousemove: (e) ->
-    select @object, @shape
     delta = v.sub mouse, @dragPos
     @dragPos = mouse
     @object.moveBy? delta
