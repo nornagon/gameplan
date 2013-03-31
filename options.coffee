@@ -120,3 +120,26 @@ makeOptionsUIFor = (o) ->
     els[0].addEventListener 'transitionend', ->
       div.remove()
 
+
+makeToolbar = ->
+  tb = tag 'div'
+  style tb,
+    width: '-webkit-calc(100% - 14px)'
+    position: 'absolute'
+    bottom: '0'
+    left: '5px'
+    background: 'hsla(205,77%,76%,0.4)'
+    padding: '2px'
+    borderTopLeftRadius: '5px'
+    borderTopRightRadius: '5px'
+    pointerEvents: 'auto'
+  tb
+
+makePlaceButton = (name) ->
+  b = tag 'button', name
+  style b,
+    font: 'inherit'
+    border: '1px solid black'
+    background: 'white'
+    borderRadius: '3px'
+  b
