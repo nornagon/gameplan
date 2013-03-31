@@ -259,7 +259,7 @@ drawGrid = ->
 draw = ->
   index.reindex()
 
-  ctx.fillStyle = 'white'
+  ctx.fillStyle = if running then 'hsl(205,74%,97%)' else 'white'
   ctx.fillRect 0, 0, canvas.width, canvas.height
   drawGrid()
 
@@ -326,6 +326,30 @@ running = false
 saved_state = null
 mouse = v 0,0
 
+run_indicator = ui_root.appendChild tag 'div'
+style run_indicator,
+  position: 'absolute', left: '5px', bottom: '9px'
+  border: '5px solid red'
+  borderRadius: '10px'
+  opacity: '0'
+run_indicator.animateIn = -> style run_indicator, opacity: '1'
+run_indicator.animateOut = -> style run_indicator, opacity: '0'
+
+run = ->
+  running = true
+  hovered = null
+  options_ui?.animateOut()
+  options_ui = null
+  ui.push ui.running
+  run_indicator.animateIn()
+  draw()
+stop = ->
+  running = false
+  diagram.restore saved_state
+  ui.pop()
+  run_indicator.animateOut()
+  draw()
+
 ui =
   states: []
   state: null
@@ -353,12 +377,7 @@ ui.default =
     if e.which is 32
       e.preventDefault()
       saved_state = diagram.state()
-      draw()
-      running = true
-      hovered = null
-      options_ui?.animateOut()
-      options_ui = null
-      ui.push ui.running
+      run()
 
 ui.dragging =
   enter: (@object, @shape) ->
@@ -383,10 +402,7 @@ ui.running =
   keydown: (e) ->
     if e.which is 32
       e.preventDefault()
-      running = false
-      diagram.restore saved_state
-      ui.pop()
-      draw()
+      stop()
 
 ui.push ui.default
 
