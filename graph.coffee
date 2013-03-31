@@ -109,7 +109,6 @@ Arrow::removeView = ->
     @setSrc null if i is 0
     @setDst null if i is @controlPoints.length - 1
 
-
     if i < @shapes.length - 1
       # Normally remove the shape in front of the point
       index.remove @shapes[i]
