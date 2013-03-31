@@ -313,7 +313,7 @@ do ->
 
 gridSize = 40
 nearestGridPointTo = (vect) ->
-  v Math.round(vect.x/gridSize)*gridSize, Math.round(vect.y/gridSize)*gridSize
+  v Math.round(vect.x/gridSize*2)*gridSize/2, Math.round(vect.y/gridSize*2)*gridSize/2
 drawGrid = ->
   ctx.beginPath()
   for y in [1...(canvas.height/gridSize)|0]
