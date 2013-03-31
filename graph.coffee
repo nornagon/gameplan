@@ -464,6 +464,7 @@ ui.default =
         saved_state = diagram.state()
         run()
       when 8 # backspace and delete
+        e.preventDefault()
         selected?.removeView()
         draw()
 
