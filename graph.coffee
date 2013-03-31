@@ -338,6 +338,7 @@ run_indicator.animateOut = -> style run_indicator, opacity: '0'
 run = ->
   running = true
   hovered = null
+  selected = null
   options_ui?.animateOut()
   options_ui = null
   ui.push ui.running
