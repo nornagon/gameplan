@@ -12,11 +12,19 @@
   }
   body, html { height: 100%; margin: 0; }
   * { -webkit-user-select: none; }
+  @font-face {
+    font-family: 'IsoEur';
+    src: url('Y14.5M-2009.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  html { font-family: 'IsoEur'; }
 </style>
 <body>
 <div class='centered'>
   <canvas></canvas>
 </div>
+  &nbsp;
 <script src='vect.js'></script>
 <script src='collision.js'></script>
 <script src='shapes.js'></script>
