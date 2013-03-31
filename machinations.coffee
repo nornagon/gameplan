@@ -77,21 +77,31 @@ class Pool
   restore: (s) -> @tokens = s
 
 class Arrow
-  constructor: (@src, @dst) ->
-    @src.out_arrows.push @
-    @dst.in_arrows.push @
+  constructor: (src, dst) ->
+    @setSrc src
+    @setDst dst
     @label = 1
+  setSrc: (src) ->
+    @src?.out_arrows.setRemove @
+    @src = src
+    @src?.out_arrows.push @
+  setDst: (dst) ->
+    @dst?.in_arrows.setRemove @
+    @dst = dst
+    @dst?.in_arrows.push @
+      
   remove: ->
-    @src.out_arrows.setRemove @
-    @dst.in_arrows.setRemove @
-  canPull: -> @src.tokens >= @label
+    @setSrc null
+    @setDst null
+  canPull: -> @src and @src.tokens >= @label
   pullAny: ->
-    @src.take @label
+    if @src then @src.take @label else 0
   pull: ->
-    if @src.tokens >= @label
+    if @src and @src.tokens >= @label
       return @src.take @label
     return 0
   push: (n) ->
+    return n unless @dst
     @dst.give n
 
   state: -> @label

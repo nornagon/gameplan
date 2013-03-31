@@ -121,6 +121,12 @@ Arrow::moveTo = (p) ->
     @controlPoints[i] = target
   else
     @controlPoints[i] = {p}
+
+  if i is 0
+    @setSrc target
+  if i is @controlPoints.length - 1
+    @setDst target
+
   @updateSegments()
 
 Arrow::updateSegments = ->
