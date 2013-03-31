@@ -74,32 +74,33 @@ Gate::draw = nodes: ->
   ctx.fillStyle = 'white'
   @shape.draw()
 
+Arrow::makeSegment = ->
+  shape = segment 0,0, 0,0, 6
+  shape.layer = 'arrowLine'
+  shape.owner = this
+  index.insert shape
+ 
 Arrow::addView = ->
   # The control points list is a->b->c etc and shapes is the
   # segments a->b, b->c. The shapes list will have 1 less element
   # than control points.
   @controlPoints = [@src, @dst]
-  shape = segment 0,0, 0,0, 6
-  shape.layer = 'arrowLine'
-  @shapes = [shape]
-  index.insert shape
-  shape.owner = this
-  
+  @shapes = [@makeSegment()]
+ 
   @updateSegments()
 
   views.push this
 
+Arrow::makeControlPoint = (p) ->
+  s = circle 0, 0, 5
+  s.layer = 'controlPoints'
+  s.cachePos p
+  s.owner = this
+  index.insert s
+
 Arrow::select = ->
   # Spawn control points
-  @cpShapes = for c in @controlPoints
-    w = 10
-    #s = rect -w/2, -w/2, w, w
-    s = circle 0, 0, w/2
-    s.layer = 'controlPoints'
-    s.cachePos c.p
-    index.insert s
-    s.owner = this
-    s
+  @cpShapes = (@makeControlPoint c.p for c in @controlPoints)
 
 Arrow::deselect = ->
   if @cpShapes then for s in @cpShapes
@@ -129,6 +130,21 @@ Arrow::moveTo = (p) ->
 
   @updateSegments()
 
+# Returns 0-1
+distBetween = (a, b, x) ->
+  delta = v.sub b, a
+  v.dot(delta, v.sub x, a) / v.lensq delta
+
+Arrow::doubleClicked = (mouse) ->
+  return unless selectedShape.layer is 'arrowLine'
+
+  i = @shapes.indexOf selectedShape
+  @controlPoints.splice i+1, 0, {p:mouse}
+  @cpShapes.splice i+1, 0, @makeControlPoint mouse
+  @shapes.splice i+1, 0, @makeSegment()
+  @updateSegments()
+  #selectedShape = @cpShapes[i+1]
+
 Arrow::updateSegments = ->
   # Could optimise this to only update the needed segment, but I don't
   # expect there to be many segments.
@@ -156,12 +172,15 @@ Arrow::updateSegments = ->
   if @cpShapes then for s,i in @cpShapes
     s.cachePos @controlPoints[i].p
 
-Segment::strokeArrow = ->
-  a = @ta
-  b = @tb
+Arrow::strokeArrow = ->
   ctx.beginPath()
-  ctx.moveTo a.x, a.y
-  ctx.lineTo b.x, b.y
+  ctx.moveTo @shapes[0].ta.x, @shapes[0].ta.y
+  for shape in @shapes
+    ctx.lineTo shape.tb.x, shape.tb.y
+
+  last = @shapes[@shapes.length - 1]
+  a = last.ta
+  b = last.tb
   n = v.normalize v.sub a, b
   left = v.add b, v.mult v.rotate(n, v.forangle Math.PI/4), 6
   right = v.add b, v.mult v.rotate(n, v.forangle -Math.PI/4), 6
@@ -172,21 +191,21 @@ Segment::strokeArrow = ->
 
 Arrow::draw =
   arrowLine: ->
-    for shape in @shapes
-      ctx.lineCap = 'round'
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
       
-      if this is hovered or this is selected
-        ctx.strokeStyle = if this is selected
-          'hsl(192,77%,48%)'
-        else
-          'orange'
+    if this is hovered or this is selected
+      ctx.strokeStyle = if this is selected
+        'hsl(192,77%,48%)'
+      else
+        'orange'
 
-        ctx.lineWidth = 5
-        shape.strokeArrow()
+      ctx.lineWidth = 5
+      @strokeArrow()
 
-      ctx.strokeStyle = 'black'
-      ctx.lineWidth = 2
-      shape.strokeArrow()
+    ctx.strokeStyle = 'black'
+    ctx.lineWidth = 2
+    @strokeArrow()
 
   glow: ->
     return unless this is selected
@@ -347,6 +366,7 @@ ui.default =
     s = shapeAt mouse
     if s
       ui.push ui.dragging, s.owner, s
+      ui.dragging.mousedown? e # Hand the click off.
     else
       select null
   keydown: (e) ->
@@ -361,6 +381,8 @@ ui.default =
 ui.dragging =
   enter: (@object, @shape) ->
     @dragPos = mouse
+  mousedown: (e) ->
+    @object.doubleClicked? mouse if e.detail is 2
   mousemove: (e) ->
     select @object, @shape
     delta = v.sub mouse, @dragPos
@@ -389,6 +411,7 @@ ui.running =
 ui.push ui.default
 
 canvas.addEventListener 'mousedown', (e) ->
+  mouse = v e.offsetX, e.offsetY
   ui.state.mousedown? e
   return false
 canvas.addEventListener 'mouseup', (e) ->

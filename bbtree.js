@@ -618,6 +618,8 @@ BBTree.prototype.insert = function(obj)
   leaf.stamp = this.getStamp();
   leaf.addPairs(this);
   this.incrementStamp();
+
+  return obj;
 };
 
 BBTree.prototype.remove = function(obj)
