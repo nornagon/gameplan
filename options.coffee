@@ -23,9 +23,9 @@ style = (el, styles) ->
   return el
 
 makeOptionsUIFor = (o) ->
-  div = document.createElement 'div'
+  div = tag 'div.options'
 
-  sweepIn = '50px'
+  sweepIn = 'translateX(50px)'
 
   style div,
     position: 'absolute'
@@ -44,9 +44,8 @@ makeOptionsUIFor = (o) ->
 
   sweep =
     webkitTransition: '150ms'
-    position: 'relative'
     opacity: '0'
-    left: sweepIn
+    webkitTransform: sweepIn
 
   title = tag 'div', o.constructor.name
   style title, sweep
@@ -108,13 +107,13 @@ makeOptionsUIFor = (o) ->
   animateIn: ->
     for t in els
       t.style.opacity = '1'
-      t.style.left = '0'
+      t.style.webkitTransform = 'translateX(0)'
     div.style.background = 'hsla(205,77%,76%,0.2)'
     div.style.border = '2px solid hsla(205,77%,76%,0.3)'
   animateOut: ->
     for t in els
       t.style.opacity = '0'
-      t.style.left = sweepIn
+      t.style.webkitTransform = sweepIn
     div.style.background = 'hsla(205,77%,76%,0.0)'
     div.style.border = '2px solid hsla(205,77%,76%,0.0)'
     els[0].addEventListener 'transitionend', ->

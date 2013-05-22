@@ -554,6 +554,7 @@ window.addEventListener 'mouseup', (e) ->
 canvas.addEventListener 'mousemove', (e) ->
   mouse = v e.offsetX, e.offsetY
   ui.state.mousemove? e
+  e.preventDefault()
   return false
 window.addEventListener 'keydown', (e) ->
   if document.activeElement.tagName is 'INPUT'
